@@ -98,9 +98,10 @@
 		</profile>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
+	<storageModule moduleId="refreshScope"/>
 	<storageModule moduleId="org.eclipse.cdt.core.pathentry">
-		<pathentry base-path="MMOEngine" include="include" kind="inc" path="" system="true"/>
 		<pathentry kind="src" path=""/>
 		<pathentry kind="out" path=""/>
+		<pathentry base-path="MMOEngine" include="include" kind="inc" path="" system="true"/>
 	</storageModule>
 </cproject>
