@@ -46,7 +46,16 @@ public:
 			}
 
 			if (player == NULL) {
-				creature->sendSystemMessage("Usage: /kick <firstName> <reason>");
+				creature->sendSystemMessage("Usage: /kick <firstName> <duration in minutes> <reason>. Use a duration of 0 if you don't want to ban the player.");
+				return GENERALERROR;
+			}
+
+			int duration;
+
+			if (args.hasMoreTokens()) {
+				duration = args.getIntToken();
+			} else {
+				creature->sendSystemMessage("You must provide a ban duration in minutes. Use a duration of 0 if you don't want to ban the player.");
 				return GENERALERROR;
 			}
 
@@ -65,7 +74,7 @@ public:
 
 			ManagedReference<PlayerManager*> playerManager = server->getZoneServer()->getPlayerManager();
 			String reason = banReason.toString();
-			playerManager->kickUser(player->getFirstName(), creature->getCustomObjectName().toString(), reason);
+			playerManager->kickUser(player->getFirstName(), creature->getCustomObjectName().toString(), duration, reason);
 
 			creature->sendSystemMessage(player->getFirstName() + " kicked.");
 

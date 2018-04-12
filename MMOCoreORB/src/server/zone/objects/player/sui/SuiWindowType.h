@@ -166,6 +166,9 @@ public:
 		//Fishing 271 - 280
 		FISHING                            = 271,
 
+		//FRS
+		ENCLAVE_VOTING                     = 281,
+
 		//Medic 291 - 300
 		MEDIC_CONSENT                      = 291,
 		MEDIC_DIAGNOSE                     = 292,
@@ -176,6 +179,8 @@ public:
 
 		//Character Builder 311 - 320
 		CHARACTER_BUILDER_LIST             = 311,
+
+		E_TERMINAL_LIST             	   = 320,
 
 		//
 		DELEGATE_TRANSFER                  = 321,

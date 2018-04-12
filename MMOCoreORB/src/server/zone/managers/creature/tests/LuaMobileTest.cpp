@@ -678,8 +678,10 @@ TEST_F(LuaMobileTest, LuaSpawnManagerTest) {
 	lua->init();
 
 	for (int i = 0; i < zoneNames.size(); i++) {
-		// Verify regions
-		lua->runFile("scripts/managers/spawn_manager/" + zoneNames.get(i) + "_regions.lua");
+		bool res = lua->runFile("custom_scripts/managers/spawn_manager/" + zoneNames.get(i) + "_regions.lua");
+
+		if (!res)
+			res = lua->runFile("scripts/managers/spawn_manager/" + zoneNames.get(i) + "_regions.lua");
 
 		LuaObject regions = lua->getGlobalObject(zoneNames.get(i) + "_regions");
 

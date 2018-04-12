@@ -38,6 +38,8 @@
 #include "templates/tangible/SharedStructureObjectTemplate.h"
 #include "server/zone/objects/player/sui/callbacks/RenameCitySuiCallback.h"
 
+#include "conf/ServerSettings.h"
+
 #ifndef CITY_DEBUG
 #define CITY_DEBUG
 #endif
@@ -66,7 +68,10 @@ void CityManagerImplementation::loadLuaConfig() {
 	Lua* lua = new Lua();
 	lua->init();
 
-	lua->runFile("scripts/managers/city_manager.lua");
+	bool res = lua->runFile("custom_scripts/managers/city_manager.lua");
+
+	if (!res)
+		res = lua->runFile("scripts/managers/city_manager.lua");
 
 	LuaObject luaObject = lua->getGlobalObject("CitiesAllowed");
 
@@ -203,6 +208,9 @@ CityRegion* CityManagerImplementation::createCity(CreatureObject* mayor, const S
 	city->setCityRank(OUTPOST);
 	city->setMayorID(mayor->getObjectID());
 	Region* region = city->addRegion(x, y, radiusPerRank.get(OUTPOST - 1), true);
+
+	if (ServerSettings::instance()->getCityTefEnabled())
+		city->setFactionAlignment(0);
 
 	city->resetVotingPeriod();
 	city->setAssessmentPending(true);
@@ -776,6 +784,11 @@ void CityManagerImplementation::processCityUpdate(CityRegion* city) {
 			}
 		}
 
+		if (ServerSettings::instance()->getTefEnabled() && ServerSettings::instance()->getCityTefEnabled()) {
+			if (cityRank < ServerSettings::instance()->getCityAlignRankReq())
+				city->setFactionAlignment(0);
+		}
+
 		city->rescheduleUpdateEvent(cityUpdateInterval * 60);
 
 		processIncomeTax(city);
@@ -1139,7 +1152,7 @@ void CityManagerImplementation::updateCityVoting(CityRegion* city, bool override
 			Reference<PlayerObject*> ghost = mayorObject->getSlottedObject("ghost").castTo<PlayerObject*>();
 
 			if (ghost != NULL) {
-				ghost->addExperience("political", votes * 300, true);
+				ghost->addExperience("political", votes * 500, true);
 			}
 
 			if (votes > topVotes || (votes == topVotes && candidateID == incumbentID)) {
@@ -1241,6 +1254,11 @@ void CityManagerImplementation::contractCity(CityRegion* city) {
 		startedAssessment = true;
 		city->setAssessmentPending(true);
 		city->scheduleCitizenAssessment(oldCityGracePeriod * 60);
+	}
+
+	if (city->getCitySpecialization() == "@city/city:city_spec_master_healing" || city->getCitySpecialization() == "@city/city:city_spec_master_manufacturing") {
+		if (newRank < METROPOLIS)
+			city->setCitySpecialization("");
 	}
 
 	if (newRank < TOWNSHIP) {
@@ -1420,6 +1438,20 @@ void CityManagerImplementation::unregisterCitizen(CityRegion* city, CreatureObje
 		UnicodeString subject = "@city/city:lost_city_citizen_subject"; // Lost Citizen!
 
 		chatManager->sendMail("@city/city:new_city_from", subject, params, mayorCreature->getFirstName(), NULL);
+	}
+
+	int maintainCitizens = citizensPerRank.get(city->getCityRank() - 1);
+
+	if (city->getCitizenCount() < maintainCitizens) {
+		if (mayor != NULL && mayor->isPlayerCreature()) {
+			CreatureObject* mayorCreature = cast<CreatureObject*> (mayor.get());
+
+			StringIdChatParameter params("city/city", "Your City no longer meets the required citizen population for its current rank. If this is not corrected, the city will contract on the next city update.");
+			params.setTO(creature->getDisplayedName());
+			UnicodeString subject = "City Citizenship Requirements No Longer Met";
+
+			chatManager->sendMail("@city/city:new_city_from", subject, params, mayorCreature->getFirstName(), NULL);
+		}
 	}
 
 	city->removeCitizen(creature->getObjectID());
@@ -2448,4 +2480,104 @@ void CityManagerImplementation::alignAmenity(CityRegion* city, CreatureObject* p
 		return;
 
 	amenity->updateDirection(Math::deg2rad(90 * direction));
+}
+
+void CityManagerImplementation::setFactionAlignment(CityRegion* city, CreatureObject* mayor) {
+	PlayerObject* ghost = mayor->getPlayerObject();
+	Zone* zone = city->getZone();
+	int cityAlignRankReq = ServerSettings::instance()->getCityAlignRankReq();
+
+	if (zone == NULL)
+		return;
+
+	CityManager* cityManager = zoneServer->getCityManager();
+	PlanetManager* planetManager = zone->getPlanetManager();
+
+	Locker clocker(city, mayor);
+
+	if (!ghost->isStaff() && !city->isMayor(mayor->getObjectID())) {
+		return;
+	}
+
+	if (mayor->getFaction() == city->getFactionAlignment()) {
+		mayor->sendSystemMessage("The city is already aligned with your faction.");
+		return;
+	}
+
+	if (city->getCityRank() < cityAlignRankReq) {
+		mayor->sendSystemMessage("The city rank is too low to align with a faction.");
+		return;
+	}
+
+	String oldName = city->getRegionName();
+	city->setFactionAlignment(mayor->getFaction());
+	mayor->sendSystemMessage("You have aligned your city with your faction.");
+
+	bool wasRegistered = false;
+
+	if (city->isRegistered()) {
+		cityManager->unregisterCity(city, mayor);
+		wasRegistered = true;
+	}
+
+	if (city->hasShuttleInstallation()) {
+		Reference<PlanetTravelPoint*> tp = planetManager->getPlanetTravelPoint(oldName);
+
+		if (tp != NULL) {
+			Reference<PlanetTravelPoint*> newTP = tp;
+			newTP->setPointName(city->getRegionName());
+			planetManager->removePlayerCityTravelPoint(oldName);
+			planetManager->addPlayerCityTravelPoint(newTP);
+		}
+	}
+
+	if (wasRegistered)
+		cityManager->registerCity(city, mayor);
+}
+
+void CityManagerImplementation::removeFactionAlignment(CityRegion* city, CreatureObject* mayor) {
+	PlayerObject* ghost = mayor->getPlayerObject();
+	Zone* zone = city->getZone();
+
+	if (zone == NULL)
+		return;
+
+	CityManager* cityManager = zoneServer->getCityManager();
+	PlanetManager* planetManager = zone->getPlanetManager();
+
+	Locker clocker(city, mayor);
+
+	if (!ghost->isStaff() && !city->isMayor(mayor->getObjectID())) {
+		return;
+	}
+
+	if (city->getFactionAlignment() == 0) {
+		mayor->sendSystemMessage("The city is already neutral.");
+		return;
+	}
+
+	String oldName = city->getRegionName();
+	city->setFactionAlignment(0);
+	mayor->sendSystemMessage("Your city is now neutral.");
+
+	bool wasRegistered = false;
+
+	if (city->isRegistered()) {
+		cityManager->unregisterCity(city, mayor);
+		wasRegistered = true;
+	}
+
+	if (city->hasShuttleInstallation()) {
+		Reference<PlanetTravelPoint*> tp = planetManager->getPlanetTravelPoint(oldName);
+
+		if (tp != NULL) {
+			Reference<PlanetTravelPoint*> newTP = tp;
+			newTP->setPointName(city->getRegionName());
+			planetManager->removePlayerCityTravelPoint(oldName);
+			planetManager->addPlayerCityTravelPoint(newTP);
+		}
+	}
+
+	if (wasRegistered)
+		cityManager->registerCity(city, mayor);
 }

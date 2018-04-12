@@ -84,7 +84,6 @@ bool ConfigManager::loadConfigData() {
 	dumpObjFiles = getGlobalByte("DumpObjFiles");
 	unloadContainers = getGlobalByte("UnloadContainers");
 	useMetrics = getGlobalByte("UseMetrics");
-	pvpMode = getGlobalByte("PvpMode");
 
 	orbNamingDirectoryAddress = getGlobalString("ORB");
 	orbNamingDirectoryPort = getGlobalShort("ORBPort");
@@ -179,7 +178,14 @@ void ConfigManager::loadMOTD() {
 	FileReader* reader;
 
 	try {
-		file = new File("conf/motd.txt");
+		file = new File("custom_scripts/conf/motd.txt");
+		FileInputStream fileStream(file);
+
+		if (!file->exists()) {
+			delete file;
+			file = new File("conf/motd.txt");
+		}
+
 		reader = new FileReader(file);
 
 		String line;

@@ -82,6 +82,12 @@ public:
 	int getFrsRank(lua_State* L);
 	int getFrsCouncil(lua_State* L);
 
+	int getJediUnlockVariable(lua_State* L);
+	int setIsGlowing(lua_State* L);
+	int isPreVillageJedi(lua_State* L);
+	int sendUnlockMessage(lua_State* L);
+	int checkForceStatus(lua_State* L);
+
 private:
 	// The pointer to the 'real object' defined in object.cc
 	Reference<PlayerObject*> realObject;

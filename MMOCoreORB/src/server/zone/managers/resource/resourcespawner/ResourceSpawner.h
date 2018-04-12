@@ -93,6 +93,8 @@ public:
 	void spawnScriptResources();
 	bool writeAllSpawnsToScript();
 
+	bool writeSpawnsToGHScript();
+
 	void start();
 	void shiftResources();
 
@@ -140,10 +142,15 @@ public:
 	String healthCheck();
 
 	String dumpResources() {
-		if(writeAllSpawnsToScript())
+		if (writeAllSpawnsToScript())
 			return "Resources Dumped";
 
 		return "Error Dumping resources";
+	}
+	String dumpResourcesToGHScript() {
+		if (writeSpawnsToGHScript())
+			return "Galaxy Harvester Output Dumped";
+		return "Error Dumping Galaxy Harvester Output";
 	}
 	String getPlanetByIndex(int index);
 private:

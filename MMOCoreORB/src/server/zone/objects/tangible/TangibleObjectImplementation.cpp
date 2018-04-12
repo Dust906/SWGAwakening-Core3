@@ -34,6 +34,9 @@
 #include "server/zone/objects/player/FactionStatus.h"
 #include "engine/engine.h"
 
+#include "server/zone/objects/player/sui/inputbox/SuiInputBox.h"
+#include "server/zone/packets/object/ObjectMenuResponse.h"
+#include "conf/ServerSettings.h"
 
 void TangibleObjectImplementation::initializeTransientMembers() {
 	SceneObjectImplementation::initializeTransientMembers();
@@ -94,13 +97,51 @@ void TangibleObjectImplementation::notifyLoadFromDatabase() {
 
 	if (hasAntiDecayKit()) {
 		AntiDecayKit* adk = antiDecayKitObject.castTo<AntiDecayKit*>();
+		if (adk != NULL) {
+			adk->destroyObjectFromDatabase();
+			adk->destroyObjectFromWorld(true);
+		}
 
+		/*
 		if (adk != NULL && !adk->isUsed()) {
 			Locker locker(adk);
 
 			adk->setUsed(true);
 		}
+		*/
 	}
+}
+
+void TangibleObjectImplementation::fillObjectMenuResponse(ObjectMenuResponse* menuResponse, CreatureObject* player) {
+	SceneObjectImplementation::fillObjectMenuResponse(menuResponse, player);
+
+	SceneObject* inventory = player->getSlottedObject("inventory");
+
+	if (ServerSettings::instance()->getItemRenamingEnabled()) {
+		if (inventory != NULL && getParent() == inventory) {
+			if (craftersName == player->getFirstName() && !isContainerObject())
+				menuResponse->addRadialMenuItem(200, 3, "Rename Item"); //Rename Item
+		}
+	}
+}
+
+int TangibleObjectImplementation::handleObjectMenuSelect(CreatureObject* player, byte selectedID) {
+	if (selectedID == 200) {
+			ManagedReference<SuiInputBox*> inputBox = new SuiInputBox(player, SuiWindowType::OBJECT_NAME, 0x00);
+
+			inputBox->setPromptTitle("@sui:set_name_title");
+			inputBox->setPromptText("@sui:set_name_prompt");
+			inputBox->setUsingObject(_this.getReferenceUnsafeStaticCast());
+			inputBox->setMaxInputSize(255);
+
+			inputBox->setDefaultInput(getCustomObjectName().toString());
+
+			player->getPlayerObject()->addSuiBox(inputBox);
+			player->sendMessage(inputBox->generateMessage());
+
+			return 0;
+		}
+	return SceneObjectImplementation::handleObjectMenuSelect(player, selectedID);
 }
 
 void TangibleObjectImplementation::sendBaselinesTo(SceneObject* player) {
@@ -137,7 +178,11 @@ void TangibleObjectImplementation::setFactionStatus(int status) {
 		uint32 oldStatusBitmask = pvpStatusBitmask;
 
 		if (factionStatus == FactionStatus::COVERT) {
-			creature->sendSystemMessage("@faction_recruiter:covert_complete");
+			if (ServerSettings::instance()->getTefEnabled()) {
+				creature->sendSystemMessage("You are now covert. Attacking enemy NPCs or players will cause a temporary enemy flag.");
+			} else {
+				creature->sendSystemMessage("@faction_recruiter:covert_complete");
+			}
 
 			if (pvpStatusBitmask & CreatureFlag::OVERT)
 				pvpStatusBitmask -= CreatureFlag::OVERT;
@@ -287,7 +332,7 @@ void TangibleObjectImplementation::setPvpStatusBitmask(uint32 bitmask, bool noti
 			if (pet == NULL)
 				continue;
 
-			Locker clocker(pet, asTangibleObject());
+			//Locker clocker(pet, asTangibleObject());
 
 			pet->setPvpStatusBitmask(bitmask);
 		}
@@ -826,8 +871,8 @@ Reference<FactoryCrate*> TangibleObjectImplementation::createFactoryCrate(int ma
 
 	Locker locker(crate);
 
-	crate->setMaxCapacity(maxSize);
-
+	//crate->setMaxCapacity(maxSize); SWGEmu Default
+	crate->setMaxCapacity(1000);
 
 	if (insertSelf) {
 		if (!crate->transferObject(asTangibleObject(), -1, false)) {

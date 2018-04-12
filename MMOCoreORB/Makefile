@@ -40,7 +40,7 @@
 # this exception also makes it possible to release a modified version
 # which carries forward this exception.
 
-IDLC = /usr/local/bin/idlc
+IDLC = ../MMOEngine/bin/idlc
 
 IDL_CLASSPATH = ../MMOEngine/include
 

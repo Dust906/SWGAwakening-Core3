@@ -35,8 +35,14 @@ int LootGroupMap::initialize() {
 	registerFunctions();
 	registerGlobals();
 
-	bool res = lua->runFile("scripts/loot/lootgroup.lua");
-	bool res2 = lua->runFile("scripts/loot/serverobjects.lua");
+	bool res = lua->runFile("custom_scripts/loot/lootgroup.lua");
+	bool res2 = lua->runFile("custom_scripts/loot/serverobjects.lua");
+
+	if (!res)
+		res = lua->runFile("scripts/loot/lootgroup.lua");
+
+	if (!res2)
+		res2 = lua->runFile("scripts/loot/serverobjects.lua");
 
 	if (!res || !res2)
 		ERROR_CODE = GENERAL_ERROR;
@@ -60,7 +66,10 @@ int LootGroupMap::includeFile(lua_State* L) {
 
 	currentFilename = file;
 
-	bool res = Lua::runFile("scripts/loot/" + filename, L);
+	bool res = Lua::runFile("custom_scripts/loot/" + filename, L);
+
+	if (!res)
+		res = Lua::runFile("scripts/loot/" + filename, L);
 
 	if (!res)
 		ERROR_CODE = GENERAL_ERROR;

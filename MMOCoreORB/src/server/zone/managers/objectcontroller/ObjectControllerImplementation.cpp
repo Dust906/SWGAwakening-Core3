@@ -24,11 +24,11 @@ void ObjectControllerImplementation::loadCommands() {
 	infoMsg << "loaded " << queueCommands->size() << " commands";
 	info(infoMsg.toString(), true);
 
-	adminLog.setLoggingName("AdminCommands");
+	adminCommandLog.setLoggingName("AdminCommands");
 	StringBuffer fileName;
-	fileName << "log/admin/admin.log";
-	adminLog.setFileLogger(fileName.toString(), true);
-	adminLog.setLogging(true);
+	fileName << "log/admin/commands.log";
+	adminCommandLog.setFileLogger(fileName.toString(), true);
+	adminCommandLog.setLogging(true);
 
 	// LUA
 	/*init();
@@ -125,7 +125,7 @@ float ObjectControllerImplementation::activateCommand(CreatureObject* object, un
 					StringBuffer logEntry;
 					logEntry << object->getDisplayedName() << " attempted to use the '/" << queueCommand->getQueueCommandName()
 							<< "' command without permissions";
-					adminLog.warning(logEntry.toString());
+					adminCommandLog.warning(logEntry.toString());
 					object->sendSystemMessage("@error_message:insufficient_permissions");
 					object->clearQueueAction(actionCount, 0, 2);
 					return 0.f;
@@ -200,5 +200,5 @@ void ObjectControllerImplementation::logAdminCommand(SceneObject* object, const 
 	StringBuffer logEntry;
 	logEntry << object->getDisplayedName() << " used '/" << queueCommand->getQueueCommandName()
 								<< "' on " << name << " with params '" << arguments.toString() << "'";
-	adminLog.info(logEntry.toString());
+	adminCommandLog.info(logEntry.toString());
 }

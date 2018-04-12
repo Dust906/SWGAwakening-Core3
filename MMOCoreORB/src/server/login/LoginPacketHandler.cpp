@@ -11,6 +11,8 @@
 
 #include "account/AccountManager.h"
 
+#include "conf/ServerSettings.h"
+
 LoginPacketHandler::LoginPacketHandler(const String& s, LoginProcessServerImplementation* serv)
 		: Logger(s) {
 
@@ -93,29 +95,30 @@ void LoginPacketHandler::handleDeleteCharacterMessage(LoginClient* client, Messa
     deleteStatement << "DELETE FROM characters WHERE character_oid = " << charId;
     deleteStatement << " AND account_id = " << accountId << " AND galaxy_id = " << ServerId << ";";
 
+    StringBuffer deleteJediUnlockStatement;
+    deleteJediUnlockStatement << "DELETE FROM jedi_unlock WHERE character_oid = " << charId << ";";
+
     int dbDelete = 0;
 
     try {
 
     	Reference<ResultSet*> moveResults = ServerDatabase::instance()->executeQuery(moveStatement.toString());
 
-    	if(moveResults == NULL || moveResults.get()->getRowsAffected() == 0){
+    	if (moveResults == NULL || moveResults.get()->getRowsAffected() == 0){
     		dbDelete = 1;
     		StringBuffer errMsg;
     		errMsg << "ERROR: Could not move character to deleted_characters table. " << endl;
     		errMsg << "QUERY: " << moveStatement.toString();
     		info(errMsg.toString(),true);
-
     	}
 
     	Reference<ResultSet*> verifyResults  = ServerDatabase::instance()->executeQuery(verifyStatement.toString());
 
-    	if(verifyResults == NULL || verifyResults.get()->getRowsAffected() == 0){
+    	if (verifyResults == NULL || verifyResults.get()->getRowsAffected() == 0){
     		dbDelete = 1;
     		StringBuffer errMsg;
         	errMsg << "ERROR: Could not verify character was moved to deleted_characters " << endl;
         	errMsg << "QUERY: " << moveStatement.toString();
-
     	}
 
     } catch (DatabaseException& e) {
@@ -126,17 +129,25 @@ void LoginPacketHandler::handleDeleteCharacterMessage(LoginClient* client, Messa
        	System::out << e.getMessage();
     }
 
-    if(!dbDelete){
+    if (!dbDelete){
     	try {
     		Reference<ResultSet*> deleteResults = ServerDatabase::instance()->executeQuery(deleteStatement);
 
-    		if(deleteResults == NULL || deleteResults.get()->getRowsAffected() == 0){
+    		if (deleteResults == NULL || deleteResults.get()->getRowsAffected() == 0){
     			StringBuffer errMsg;
     			errMsg << "ERROR: Unable to delete character from character table. " << endl;
     			errMsg << "QUERY: " << deleteStatement.toString();
     			dbDelete = 1;
     		}
 
+    		if (ServerSettings::instance()->getCustomUnlockEnabled() && dbDelete == 1) {
+        			Reference<ResultSet*> deleteResultsJedi = ServerDatabase::instance()->executeQuery(deleteJediUnlockStatement);
+        			if (deleteResultsJedi == NULL || deleteResultsJedi.get()->getRowsAffected() == 0) {
+        				StringBuffer errMsg;
+        				errMsg << "ERROR: Unable to delete character data from the jedi_unlock table. It does not exist. " << endl;
+        				errMsg << "QUERY: " << deleteJediUnlockStatement.toString();
+        			}
+    		}
 
     	} catch (DatabaseException& e) {
     		System::out << e.getMessage();

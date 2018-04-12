@@ -2,6 +2,7 @@
 #define RANKMAINTENANCETASK_H_
 
 #include "server/zone/managers/frs/FrsManager.h"
+#include "server/zone/managers/player/PlayerManager.h"
 
 namespace server {
 namespace zone {
@@ -26,7 +27,7 @@ public:
 
 		strongRef->updateLastMaintenance();
 
-		Vector<uint64> playerList = strongRef->getFullPlayerList();
+        Vector<uint64> playerList = strongRef->getFullPlayerList();
 
 		locker.release();
 
@@ -39,7 +40,7 @@ public:
 		int numTasks = ceil((float)playerList.size() / (float)playersPerTask);
 
 		for (int i = 0; i < numTasks; i++) {
-			Vector<uint> taskList;
+			Vector<uint64> taskList;
 
 			for (int j = 0; j < playersPerTask; j++) {
 				int curIndex = i * playersPerTask + j;

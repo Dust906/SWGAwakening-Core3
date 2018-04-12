@@ -64,7 +64,7 @@ class CityRegion extends ManagedObject implements Logger {
 	protected CitizenList bannedList;
 
 	@dereferenced
-	protected transient SortedVector<unsigned long> completeStructureList;
+	protected SortedVector<unsigned long> completeStructureList;
 
 	@dereferenced
 	protected transient Mutex structureListMutex;
@@ -125,6 +125,8 @@ class CityRegion extends ManagedObject implements Logger {
 
 	@dereferenced
 	protected transient VectorMap<unsigned long, TangibleObject> bazaars;
+
+	protected unsigned int factionAlignment;
 
 	public static final byte RANK_CLIENT = 0;
 	public static final byte RANK_OUTPOST = 1;
@@ -851,4 +853,13 @@ class CityRegion extends ManagedObject implements Logger {
 
 	@dirty
 	public native unsigned long getObjectID();
+
+	@preLocked
+	public void setFactionAlignment(unsigned int val) {
+		factionAlignment = val;
+	}
+	@read
+	public unsigned int getFactionAlignment() {
+		return factionAlignment;
+	}
 }

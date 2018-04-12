@@ -32,7 +32,7 @@ public:
 
 	void run() {
 		HolocronManager* holocronManager = server->getHolocronManager();
-		holocronManager->submitTicket(client, ticketBody);
+		holocronManager->submitTicket(client, categoryId, ticketBody);
 	}
 };
 

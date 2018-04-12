@@ -59,7 +59,11 @@ void GCWManagerImplementation::loadLuaConfig() {
 
 	Lua* lua = new Lua();
 	lua->init();
-	lua->runFile("scripts/managers/gcw_manager.lua");
+
+	bool res = lua->runFile("custom_scripts/managers/gcw_manager.lua");
+
+	if (!res)
+		res = lua->runFile("scripts/managers/gcw_manager.lua");
 
 	gcwCheckTimer = lua->getGlobalInt("gcwCheckTimer");
 	vulnerabilityDuration = lua->getGlobalInt("vulnerabilityDuration");

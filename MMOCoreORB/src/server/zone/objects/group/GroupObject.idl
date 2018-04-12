@@ -200,4 +200,5 @@ class GroupObject extends SceneObject {
 	public native void scheduleUpdateNearestMissionForGroup(unsigned int planetCRC);
 
 	public native void updateLootRules();
+
 }

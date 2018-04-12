@@ -1968,7 +1968,8 @@ bool MissionManagerImplementation::isBountyValidForPlayer(CreatureObject* player
 
 	uint64 accountId = playerGhost->getAccountID();
 
-	if (!enableSameAccountBountyMissions && targetGhost->getAccountID() == accountId)
+	if (!enableSameAccountBountyMissions && (targetGhost->getAccountID() == accountId || targetGhost->getIpAddress() == playerGhost->getIpAddress() ||
+			player->getGuildID() == creature->getGuildID()))
 		return false;
 
 	auto hunters = bounty->getBountyHunters();
@@ -2027,6 +2028,7 @@ void MissionManagerImplementation::failPlayerBountyMission(uint64 bountyHunter) 
 
 			if (objective != NULL) {
 				ManagedReference<CreatureObject*> player = objective->getPlayerOwner();
+				ManagedReference<CreatureObject*> target = server->getObject(mission->getTargetObjectId()).castTo<CreatureObject*>();
 
 				if (player != NULL) {
 					player->sendSystemMessage("@mission/mission_generic:failed");
@@ -2034,6 +2036,12 @@ void MissionManagerImplementation::failPlayerBountyMission(uint64 bountyHunter) 
 					auto ghost = player->getPlayerObject();
 					if (ghost != NULL)
 						ghost->schedulePvpTefRemovalTask(false, true);
+				}
+
+				if (target != NULL) {
+					auto targetGhost = target->getPlayerObject();
+					if (targetGhost != NULL)
+						targetGhost->schedulePvpTefRemovalTask(false, true);
 				}
 
 				objective->fail();

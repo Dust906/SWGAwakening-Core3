@@ -20,6 +20,9 @@
 #include "server/zone/packets/creature/CreatureObjectDeltaMessage4.h"
 #include "server/zone/managers/mission/MissionManager.h"
 
+#include "conf/ServerSettings.h"
+#include "server/zone/managers/frs/FrsManager.h"
+
 SkillManager::SkillManager()
 : Logger("SkillManager") {
 
@@ -36,7 +39,10 @@ SkillManager::~SkillManager() {
 
 int SkillManager::includeFile(lua_State* L) {
 	String filename = Lua::getStringParameter(L);
-	Lua::runFile("scripts/skills/" + filename, L);
+	bool res = Lua::runFile("custom_scripts/skills/" + filename, L);
+
+	if (!res)
+		Lua::runFile("scripts/skills/" + filename, L);
 
 	return 0;
 }
@@ -53,7 +59,10 @@ void SkillManager::loadLuaConfig() {
 	Lua* lua = new Lua();
 	lua->init();
 
-	lua->runFile("scripts/managers/skill_manager.lua");
+	bool res = lua->runFile("custom_scripts/managers/skill_manager.lua");
+
+	if (!res)
+		res = lua->runFile("scripts/managers/skill_manager.lua");
 
 	apprenticeshipEnabled = lua->getGlobalByte("apprenticeshipEnabled");
 
@@ -130,7 +139,10 @@ void SkillManager::loadFromLua() {
 	lua_register(lua->getLuaState(), "includeFile", &includeFile);
 	lua_register(lua->getLuaState(), "addSkill", &addSkill);
 
-	lua->runFile("scripts/skills/serverobjects.lua");
+	bool res = lua->runFile("custom_scripts/skills/serverobjects.lua");
+
+	if (!res)
+		lua->runFile("scripts/skills/serverobjects.lua");
 
 	delete lua;
 }
@@ -349,6 +361,9 @@ bool SkillManager::awardSkill(const String& skillName, CreatureObject* creature,
 		if (skill->getSkillName().contains("force_sensitive") && skill->getSkillName().contains("_04"))
 			JediManager::instance()->onFSTreeCompleted(creature, skill->getSkillName());
 
+		if (ServerSettings::instance()->getCustomUnlockEnabled() && skill->getSkillName().contains("force_sensitive"))
+			JediManager::instance()->onFsSkillLearned(creature);
+
 		MissionManager* missionManager = creature->getZoneServer()->getMissionManager();
 
 		if (skill->getSkillName() == "force_title_jedi_rank_02") {
@@ -399,10 +414,15 @@ void SkillManager::removeSkillRelatedMissions(CreatureObject* creature, Skill* s
 	}
 }
 
-bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creature, bool notifyClient) {
+bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creature, bool notifyClient, bool forceSurrender) {
 	Skill* skill = skillMap.get(skillName.hashCode());
 
 	if (skill == NULL)
+		return false;
+
+	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+
+	if (ghost == NULL)
 		return false;
 
 	Locker locker(creature);
@@ -416,11 +436,16 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 	for (int i = 0; i < skillList->size(); ++i) {
 		Skill* checkSkill = skillList->get(i);
 
-		if (checkSkill->isRequiredSkillOf(skill))
+		if (checkSkill->isRequiredSkillOf(skill) && !forceSurrender)
 			return false;
 	}
 
 	if (skillName.beginsWith("force_") && !(JediManager::instance()->canSurrenderSkill(creature, skillName)))
+		return false;
+
+	ZoneServer* server = creature->getZoneServer();
+
+	if (server == NULL)
 		return false;
 
 	removeSkillRelatedMissions(creature, skill);
@@ -429,8 +454,6 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 
 	//Remove skill modifiers
 	auto skillModifiers = skill->getSkillModifiers();
-
-	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
 
 	for (int i = 0; i < skillModifiers->size(); ++i) {
 		auto entry = &skillModifiers->elementAt(i);
@@ -474,6 +497,11 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 
 		//Update maximum experience.
 		updateXpLimits(ghost);
+
+		FrsManager* frsManager = server->getFrsManager();
+
+		if (frsManager != NULL && skillName.beginsWith("force_rank_"))
+			frsManager->surrenderRankSkill(creature, skillName);
 
 		/// Update Force Power Max
 		ghost->setForcePowerMax(creature->getSkillMod("jedi_force_power_max"), true);

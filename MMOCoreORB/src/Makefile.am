@@ -40,7 +40,7 @@
 # this exception also makes it possible to release a modified version
 # which carries forward this exception.
 
-DEFAULT_FLAGS = $(UNITTEST_DIRECTIVES) -ggdb -Wall -Wextra -Wno-unused -Wno-sign-compare -Wno-multichar -DDEFAULT_DYNAMIC_CAST -Wno-unused-parameter -Wno-overloaded-virtual -Wno-missing-declarations -Werror -std=c++11 -march=native
+DEFAULT_FLAGS = $(UNITTEST_DIRECTIVES) -ggdb -Wall -Wextra -Wimplicit-fallthrough=0 -Wno-unused -Wno-sign-compare -Wno-multichar -DDEFAULT_DYNAMIC_CAST -Wno-unused-parameter -Wno-overloaded-virtual -Wno-missing-declarations -Werror -std=c++11 -march=native
 AM_CXXFLAGS = $(DEFAULT_FLAGS) -O0
 
 ENGINE3_PATH=../../../../MMOEngine
@@ -106,7 +106,10 @@ core3_TESTS = 	server/zone/objects/area/areashapes/tests/CircularAreaShapeTest.c
 			  	server/zone/tests/ZoneTest.cpp \
 			  	server/zone/managers/objectcontroller/command/tests/CommandLuaTest.cpp
 
-core3_IDLS =	autogen/server/zone/objects/creature/credits/CreditObject.cpp \
+core3_IDLS =	autogen/server/zone/objects/building/TutorialBuildingObject.cpp \
+				autogen/server/zone/managers/frs/FrsManagerData.cpp \
+				autogen/server/zone/managers/frs/FrsRank.cpp \
+				autogen/server/zone/objects/creature/credits/CreditObject.cpp \
 				autogen/server/zone/objects/mission/PlayerBounty.cpp \
 				autogen/server/chat/PendingMessageList.cpp \
 				autogen/server/zone/managers/frs/FrsManager.cpp \
@@ -120,6 +123,9 @@ core3_IDLS =	autogen/server/zone/objects/creature/credits/CreditObject.cpp \
 				autogen/server/zone/objects/creature/buffs/ChannelForceBuff.cpp \
 				autogen/server/zone/objects/tangible/eventperk/ShuttleBeacon.cpp \
 				autogen/server/utils/LambdaObserver.cpp \
+				autogen/server/zone/objects/area/FactionalArea.cpp \
+				autogen/server/zone/objects/player/sui/eterminalbox/SuiETerminalBox.cpp \
+				autogen/server/zone/objects/tangible/terminal/eterminal/ETerminal.cpp \
 				autogen/server/zone/objects/tangible/misc/FsCraftingComponentObject.cpp \
 				autogen/server/zone/objects/tangible/misc/CustomIngredient.cpp \
 				autogen/server/zone/objects/tangible/misc/PlantObject.cpp \
@@ -382,6 +388,10 @@ core3_SOURCES =	$(core3_IDLS) \
 		server/zone/objects/player/sui/listbox/LuaSuiListBox.cpp \
 		server/zone/objects/player/sui/LuaSuiPageData.cpp \
 		server/zone/objects/player/sui/SuiPageData.cpp \
+		server/zone/objects/area/FactionalAreaImplementation.cpp \
+		server/zone/objects/player/sui/eterminalbox/SuiETerminalBoxImplementation.cpp \
+		server/zone/objects/tangible/terminal/eterminal/ETerminalImplementation.cpp \
+		conf/ServerSettings.cpp \
 		server/zone/managers/vendor/VendorManager.cpp \
 		server/zone/managers/jedi/JediManager.cpp \
 		server/zone/managers/ship/ShipManager.cpp \
@@ -432,6 +442,7 @@ core3_SOURCES =	$(core3_IDLS) \
 		server/zone/objects/installation/components/DetectorZoneComponent.cpp \
 		server/zone/objects/installation/components/FactoryObjectMenuComponent.cpp \
 		server/zone/objects/installation/components/MinefieldMenuComponent.cpp \
+		server/zone/objects/tangible/terminal/components/EnclaveTerminalMenuComponent.cpp \
 		server/zone/objects/tangible/terminal/components/StructureTerminalMenuComponent.cpp \
 		server/zone/objects/tangible/terminal/components/HQMenuComponent.cpp \
 		server/zone/objects/tangible/terminal/components/DestructibleBuildingMenuComponent.cpp \

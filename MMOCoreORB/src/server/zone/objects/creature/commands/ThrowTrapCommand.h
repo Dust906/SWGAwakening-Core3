@@ -8,6 +8,8 @@
 #include "server/zone/objects/creature/events/ThrowTrapTask.h"
 #include "templates/tangible/TrapTemplate.h"
 
+#include "server/zone/managers/collision/CollisionManager.h"
+
 class ThrowTrapCommand: public CombatQueueCommand {
 public:
 
@@ -54,13 +56,35 @@ public:
 			ManagedReference<CreatureObject*> targetCreature =
 					server->getZoneServer()->getObject(target).castTo<CreatureObject*>();
 
-			if (targetCreature == NULL || !targetCreature->isCreature()) {
+			if (targetCreature == NULL) {
+				creature->sendSystemMessage("Invalid Target");
+				return GENERALERROR;
+			}
+
+			if (!targetCreature->isAttackableBy(creature)) {
+				creature->sendSystemMessage("Invalid Target");
+				return GENERALERROR;
+			}
+
+			if (targetCreature->isPlayerCreature()) {
+				if (!creature->hasBountyMissionFor(targetCreature) || !creature->hasSkill("combat_bountyhunter_master")) {
+					creature->sendSystemMessage("@trap/trap:sys_creatures_only");
+					return GENERALERROR;
+				}
+			} else if (targetCreature->isPet()) {
+				ManagedReference<CreatureObject*> owner = targetCreature->getLinkedCreature().get();
+
+				if (!creature->hasBountyMissionFor(owner) || !creature->hasSkill("combat_bountyhunter_master")) {
+					creature->sendSystemMessage("@trap/trap:sys_creatures_only");
+					return GENERALERROR;
+				}
+			} else if (!targetCreature->isCreature()) {
 				creature->sendSystemMessage("@trap/trap:sys_creatures_only");
 				return GENERALERROR;
 			}
 
-			if (!targetCreature->isAttackableBy(creature) || targetCreature->isPet()) {
-				creature->sendSystemMessage("@trap/trap:sys_no_pets");
+			if (targetCreature->hasTrapImmunity()) {
+				creature->sendSystemMessage("Your target is immune to traps.");
 				return GENERALERROR;
 			}
 
@@ -88,6 +112,11 @@ public:
 				return GENERALERROR;
 			}
 
+			if (!CollisionManager::checkLineOfSight(creature, targetCreature)) {
+				creature->sendSystemMessage("@combat_effects:cansee_fail");
+				return GENERALERROR;
+			}
+
 			int effectType = 0;
 
 			// No skill Check
@@ -96,6 +125,10 @@ public:
 				creature->sendSystemMessage("@trap/trap:trap_no_skill");
 				return GENERALERROR;
 			}
+
+			// MBH able to use adhesive trap without Scout x4xx
+			if (creature->hasSkill("combat_bountyhunter_master"))
+				trappingSkill += 25;
 
 			/// Skill too low check
 			if(trappingSkill < trapData->getSkillRequired()) {
@@ -126,7 +159,15 @@ public:
 			uint32 crc = String(animation).hashCode();
 			CombatAction* action = new CombatAction(creature, targetCreature, crc, hit, 0L);
 			creature->broadcastMessage(action, true);
-			creature->addCooldown("throwtrap", 1500);
+
+			if (targetCreature->isPlayerCreature() || targetCreature->isPet()) {
+				creature->addCooldown("throwtrap", 15000); //15 Seconds
+
+				Locker locker(targetCreature);
+				targetCreature->updateTrapImmunityTime(20000); //20 Seconds
+			} else {
+				creature->addCooldown("throwtrap", 1500);
+			}
 
 			Locker clocker(trap, creature);
 
@@ -137,15 +178,34 @@ public:
 			int damage = 0;
 
 			if (hit) {
-
 				message.setStringId("trap/trap" , trapData->getSuccessMessage());
 
 				buff = new Buff(targetCreature, crc, trapData->getDuration(), BuffType::STATE);
 
 				Locker locker(buff);
 
-				if(state != 0)
+				if (state != 0) {
+					if (state == CreatureState::FROZEN && (targetCreature->isPlayerCreature() || targetCreature->isPet())){
+						state = CreatureState::IMMOBILIZED;
+						uint32 forceRun1CRC = BuffCRC::JEDI_FORCE_RUN_1;
+						uint32 forceRun2CRC = BuffCRC::JEDI_FORCE_RUN_2;
+						uint32 forceRun3CRC = BuffCRC::JEDI_FORCE_RUN_3;
+						Locker pLocker(targetCreature);
+						if (targetCreature->hasBuff(forceRun1CRC))
+							targetCreature->removeBuff(forceRun1CRC);
+						if (targetCreature->hasBuff(forceRun2CRC))
+							targetCreature->removeBuff(forceRun2CRC);
+						if (targetCreature->hasBuff(forceRun3CRC))
+							targetCreature->removeBuff(forceRun3CRC);
+						if (creature->hasBuff(STRING_HASHCODE("burstrun")) || creature->hasBuff(STRING_HASHCODE("retreat"))) {
+							creature->removeBuff(STRING_HASHCODE("burstrun"));
+							creature->removeBuff(STRING_HASHCODE("retreat"));
+						}
+						buff->setSpeedMultiplierMod(0.1f);
+						buff->setAccelerationMultiplierMod(0.1f);
+					}
 					buff->addState(state);
+				}
 
 				VectorMap<String, int>* skillMods = trapData->getSkillMods();
 				for(int i = 0; i < skillMods->size(); ++i) {

@@ -33,7 +33,7 @@ namespace server {
 						processor = pserv;
 
 						setLoggingName("HolocronManager");
-						setGlobalLogging(false);
+						setGlobalLogging(true);
 						setLogging(false);
 
 						loadBugCategories();
@@ -42,7 +42,7 @@ namespace server {
 					void loadBugCategories();
 					void sendRequestCategoriesResponseTo(ZoneClientSession* client);
 
-					void submitTicket(ZoneClientSession* client, const UnicodeString& ticketBody);
+					void submitTicket(ZoneClientSession* client, int categoryId, const UnicodeString& ticketBody);
 
 					uint32 getReporterId(ZoneClientSession* client);
 					uint32 createReporterId(ZoneClientSession* client);

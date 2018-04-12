@@ -82,7 +82,10 @@ public:
 		lua.init();
 		lua_register(lua.getLuaState(), "includeFile", &includeFile);
 		lua_register(lua.getLuaState(), "addLevel", &addLevel);
-		lua.runFile("scripts/staff/levels/serverobjects.lua");
+		bool res = lua.runFile("custom_scripts/staff/levels/serverobjects.lua");
+
+		if (!res)
+			lua.runFile("scripts/staff/levels/serverobjects.lua");
 	}
 
 	static int addLevel(lua_State* L) {
@@ -95,7 +98,10 @@ public:
 
 	static int includeFile(lua_State* L) {
 		String filename = lua.getStringParameter(L);
-		lua.runFile("scripts/staff/" + filename,  L);
+		bool res = lua.runFile("custom_scripts/staff/" + filename,  L);
+
+		if (!res)
+			lua.runFile("scripts/staff/" + filename,  L);
 
 		return 0;
 	}

@@ -20,6 +20,8 @@
 #include "server/zone/managers/gcw/sessions/sui/ContrabandFineSuiCallback.h"
 #include "server/zone/objects/player/FactionStatus.h"
 
+#include "conf/ServerSettings.h"
+
 int ContrabandScanSessionImplementation::initializeSession() {
 	ManagedReference<AiAgent*> scanner = weakScanner.get();
 	ManagedReference<CreatureObject*> player = weakPlayer.get();
@@ -323,7 +325,14 @@ void ContrabandScanSessionImplementation::checkPlayerFactionRank(Zone* zone, AiA
 			sendScannerChatMessage(zone, scanner, player, "discovered_chat_imperial", "discovered_chat_rebel");
 			sendSystemMessage(scanner, player, "discovered_imperial", "discovered_rebel");
 			scanner->doAnimation("point_accusingly");
-			player->setFactionStatus(FactionStatus::COVERT);
+
+			if (ServerSettings::instance()->getTefEnabled()) {
+				PlayerObject* ghost = player->getPlayerObject();
+				if (ghost != NULL)
+					ghost->updateLastPvpCombatActionTimestamp(true, false, false);
+			} else {
+				player->setFactionStatus(FactionStatus::COVERT);
+			}
 
 			Reference<Task*> lambdaTask = new LambdaShuttleWithReinforcementsTask(player, scanner->getFaction(), player->getFactionRank());
 			lambdaTask->schedule(TASKDELAY);

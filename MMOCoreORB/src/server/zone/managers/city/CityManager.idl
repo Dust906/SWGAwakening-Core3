@@ -264,4 +264,7 @@ class CityManager extends ManagedService implements Logger {
 	public native void promptForceUpdate(CityRegion city, CreatureObject player);
 
 	public native void alignAmenity(CityRegion city, CreatureObject player, SceneObject amenity, int direction);
+
+	public native void setFactionAlignment(CityRegion city, CreatureObject player);
+	public native void removeFactionAlignment(CityRegion city, CreatureObject player);
 }

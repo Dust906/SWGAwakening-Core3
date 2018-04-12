@@ -9,6 +9,8 @@
 #include "server/zone/managers/jedi/JediManager.h"
 #include "server/zone/managers/director/DirectorManager.h"
 
+#include "conf/ServerSettings.h"
+
 void CharacterBuilderTerminalImplementation::loadTemplateData(SharedObjectTemplate* templateData) {
 	TangibleObjectImplementation::loadTemplateData(templateData);
 
@@ -47,17 +49,25 @@ void CharacterBuilderTerminalImplementation::sendInitialChoices(CreatureObject* 
 		return;
 	}
 
-	ManagedReference<SuiCharacterBuilderBox*> sui = new SuiCharacterBuilderBox(player, rootNode);
-	sui->setUsingObject(_this.getReferenceUnsafeStaticCast());
+	if (ServerSettings::instance()->getCharacterBuilderEnabled()) {
+		if (ServerSettings::instance()->getCharacterBuilderAdminOnly() && !player->getPlayerObject()->isPrivileged()) {
+			player->sendSystemMessage("The character builder can only be used by staff members at this time.");
+		} else {
+			ManagedReference<SuiCharacterBuilderBox*> sui = new SuiCharacterBuilderBox(player, rootNode);
+			sui->setUsingObject(_this.getReferenceUnsafeStaticCast());
 
-	player->sendMessage(sui->generateMessage());
-	player->getPlayerObject()->addSuiBox(sui);
+			player->sendMessage(sui->generateMessage());
+			player->getPlayerObject()->addSuiBox(sui);
+		}
+	} else {
+		player->sendSystemMessage("The Character Builder is disabled.");
+	}
 }
 
-void CharacterBuilderTerminalImplementation::enhanceCharacter(CreatureObject* player) {
+void CharacterBuilderTerminalImplementation::builderEnhanceCharacter(CreatureObject* player) {
 	PlayerManager* pm = player->getZoneServer()->getPlayerManager();
 
-	pm->enhanceCharacter(player);
+	pm->builderEnhanceCharacter(player);
 
 	ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
 
@@ -70,7 +80,7 @@ void CharacterBuilderTerminalImplementation::enhanceCharacter(CreatureObject* pl
 		if (pet != NULL) {
 			Locker crossLocker(pet, player);
 
-			pm->enhanceCharacter(pet);
+			pm->builderEnhanceCharacter(pet);
 		}
 	}
 }

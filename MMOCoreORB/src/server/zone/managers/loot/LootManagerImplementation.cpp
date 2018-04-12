@@ -13,6 +13,7 @@
 #include "templates/LootItemTemplate.h"
 #include "templates/LootGroupTemplate.h"
 #include "server/zone/ZoneServer.h"
+#include "server/zone/managers/stringid/StringIdManager.h"
 #include "LootGroupMap.h"
 #include "server/zone/objects/tangible/component/lightsaber/LightsaberCrystalComponent.h"
 
@@ -58,7 +59,12 @@ bool LootManagerImplementation::loadConfigData() {
 	Lua* lua = new Lua();
 	lua->init();
 
-	if (!lua->runFile("scripts/managers/loot_manager.lua")) {
+	bool res = lua->runFile("custom_scripts/managers/loot_manager.lua");
+
+	if (!res)
+		res = lua->runFile("scripts/managers/loot_manager.lua");
+
+	if (!res) {
 		delete lua;
 		return false;
 	}
@@ -258,6 +264,14 @@ int LootManagerImplementation::calculateLootCredits(int level) {
 
 TangibleObject* LootManagerImplementation::createLootObject(LootItemTemplate* templateObject, int level, bool maxCondition) {
 	int uncappedLevel = level;
+
+	// SWG Awakening Custom: chance to reduce quality & stats
+	if (uncappedLevel > 300) {
+
+		float effectivePercentage = ((100.0f - (float)System::random(20)) / 100);
+		uncappedLevel = (int) round(((float) uncappedLevel) * effectivePercentage);
+
+	}
 
 	if(level < 1)
 		level = 1;
@@ -472,6 +486,36 @@ TangibleObject* LootManagerImplementation::createLootObject(LootItemTemplate* te
 
 	delete craftingValues;
 
+	if(prototype->isAttachment()){
+		Attachment* attachment = cast<Attachment*>( prototype.get());
+
+		HashTable<String, int>* mods = attachment->getSkillMods();
+		HashTableIterator<String, int> iterator = mods->iterator();
+		StringId attachmentName;
+		String key = "";
+		int value = 0;
+		int last = 0;
+		String attachmentCustomName = "Skill Attachment ";
+
+		if(attachment->isClothingAttachment()){
+			attachmentCustomName += "(Clothing): ";
+		}
+		else{
+			attachmentCustomName += "(Armor): ";
+		}
+
+		for(int i = 0; i < mods->size(); ++i) {
+			iterator.getNextKeyAndValue(key, value);
+
+			if(value > last){
+				last = value;
+				attachmentName.setStringId("stat_n", key);
+				prototype->setObjectName(attachmentName,false);
+				attachmentCustomName += prototype->getDisplayedName();
+			}
+		}
+		prototype->setCustomObjectName(attachmentCustomName,false);
+	}
 	return prototype;
 }
 

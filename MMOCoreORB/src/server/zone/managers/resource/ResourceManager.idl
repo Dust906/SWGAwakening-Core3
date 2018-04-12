@@ -108,5 +108,7 @@ class ResourceManager extends Observer implements Logger {
 	public ZoneServer getZoneServer() {
 		return zoneServer;
 	}
+
+	public native string dumpResourcesToGHScript();
 }
 

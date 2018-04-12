@@ -14,10 +14,14 @@ const String VisibilityManager::factionStringImperial = "imperial";
 const unsigned int VisibilityManager::factionRebel = factionStringRebel.hashCode();
 const unsigned int VisibilityManager::factionImperial = factionStringImperial.hashCode();
 
+#include "server/zone/objects/group/GroupObject.h"
+
 float VisibilityManager::calculateVisibilityIncrease(CreatureObject* creature) {
 	Zone* zone = creature->getZone();
 
 	float visibilityIncrease = 0;
+	// SWG Awakening Custom - visibility range is set to 100m
+	int visibilityRange = 100;
 
 	if (zone == NULL)
 		return visibilityIncrease;
@@ -26,7 +30,7 @@ float VisibilityManager::calculateVisibilityIncrease(CreatureObject* creature) {
 	SortedVector<QuadTreeEntry*> closeObjects;
 	CloseObjectsVector* closeObjectsVector = (CloseObjectsVector*) creature->getCloseObjects();
 	if (closeObjectsVector == NULL) {
-		zone->getInRangeObjects(creature->getWorldPositionX(), creature->getWorldPositionY(), 32, &closeObjects, true);
+		zone->getInRangeObjects(creature->getWorldPositionX(), creature->getWorldPositionY(), visibilityRange, &closeObjects, true);
 	} else {
 		closeObjectsVector->safeCopyTo(closeObjects);
 	}
@@ -42,24 +46,28 @@ float VisibilityManager::calculateVisibilityIncrease(CreatureObject* creature) {
 
 		CreatureObject* c = obj->asCreatureObject();
 
-		if (c == NULL || (!c->isNonPlayerCreatureObject() && !c->isPlayerCreature()))
+		if (c == NULL || (!c->isNonPlayerCreatureObject() && !c->isHumanoid() && !c->isPlayerCreature()))
 			continue;
 
 		if (c->isDead() || c->isIncapacitated() || (c->isPlayerCreature() && c->getPlayerObject()->hasGodMode()))
 			continue;
 
-		if (!creature->isInRange(c, 32) || !CollisionManager::checkLineOfSight(creature, c))
+		if (!creature->isInRange(c, visibilityRange) || !CollisionManager::checkLineOfSight(creature, c))
+			continue;
+
+		ManagedReference<GroupObject*> group = creature->getGroup();
+		if (c->isPlayerCreature() && group != NULL && group->hasMember(c))
 			continue;
 
 		if (creature->getFaction() == 0 || (c->getFaction() != factionImperial && c->getFaction() != factionRebel)) {
-			visibilityIncrease += 0.5;
+			visibilityIncrease += 3;
 			//info(c->getCreatureName().toString() + " generating a 0.5 visibility modifier", true);
 		} else {
 			if (creature->getFaction() == c->getFaction()) {
-				visibilityIncrease += 0.25;
+				visibilityIncrease += 2;
 				//info(c->getCreatureName().toString() + " generating a 0.25 visibility modifier", true);
 			} else {
-				visibilityIncrease += 1;
+				visibilityIncrease += 4;
 				//info( c->getCreatureName().toString() + " generating a 1.0 visibility modifier", true);
 			}
 		}
@@ -135,7 +143,7 @@ void VisibilityManager::increaseVisibility(CreatureObject* creature, int visibil
 	//info("Increasing visibility for " + creature->getFirstName(), true);
 	Reference<PlayerObject*> ghost = creature->getSlottedObject("ghost").castTo<PlayerObject*>();
 
-	if (ghost != NULL  && !ghost->hasGodMode()) {
+	if (ghost != NULL && !ghost->hasGodMode()) {
 		Locker locker(ghost);
 		decreaseVisibility(creature);
 
@@ -154,7 +162,7 @@ void VisibilityManager::increaseVisibility(CreatureObject* creature, int visibil
 void VisibilityManager::clearVisibility(CreatureObject* creature) {
 	Reference<PlayerObject*> ghost = creature->getSlottedObject("ghost").castTo<PlayerObject*>();
 
-	if (ghost != NULL  && !ghost->hasGodMode()) {
+	if (ghost != NULL && !ghost->hasGodMode()) {
 		//info("Clearing visibility for player " + String::valueOf(creature->getObjectID()), true);
 
 		Locker locker(ghost);
@@ -181,7 +189,9 @@ void VisibilityManager::loadConfiguration() {
 		Lua* lua = new Lua();
 		lua->init();
 
-		lua->runFile("scripts/managers/jedi/visibility_manager.lua");
+		bool res = lua->runFile("custom_scripts/managers/jedi/visibility_manager.lua");
+		if (!res)
+			res = lua->runFile("scripts/managers/jedi/visibility_manager.lua");
 
 		maxVisibility  = (float)lua->getGlobalInt(String("maxVisibility"));
 		terminalVisThreshold = (float)lua->getGlobalInt(String("termThreshold"));

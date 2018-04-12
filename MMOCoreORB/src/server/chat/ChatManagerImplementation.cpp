@@ -49,6 +49,8 @@
 #include "server/chat/room/ChatRoomMap.h"
 #include "templates/string/StringFile.h"
 
+#include "conf/ServerSettings.h"
+
 ChatManagerImplementation::ChatManagerImplementation(ZoneServer* serv, int initsize) : ManagedServiceImplementation() {
 	server = serv;
 	playerManager = NULL;
@@ -319,15 +321,31 @@ void ChatManagerImplementation::initiateRooms() {
 	guildRoom = createRoom("guild", systemRoom);
 	guildRoom->setPrivate();
 
-	Reference<ChatRoom*> generalRoom = createRoom("Chat", galaxyRoom);
-	generalRoom->setCanEnter(true);
-	generalRoom->setAllowSubrooms(true);
-	generalRoom->setTitle("public chat for this server, can create rooms here");
-
 	auctionRoom = createRoom("Auction", galaxyRoom);
 	auctionRoom->setCanEnter(true);
 	auctionRoom->setChatRoomType(ChatRoom::AUCTION);
 
+	if (ServerSettings::instance()->getGeneralChatEnabled()) {
+		generalRoom = createRoom("General", galaxyRoom);
+		generalRoom->setCanEnter(true);
+		generalRoom->setAllowSubrooms(true);
+		generalRoom->setTitle("Public chat for the SWG Awakening galaxy. Chat rooms can be created here.");
+	} else {
+		generalRoom = createRoom("Chat", galaxyRoom);
+		generalRoom->setCanEnter(true);
+		generalRoom->setAllowSubrooms(true);
+		generalRoom->setTitle("public chat for this server, can create rooms here");
+	}
+
+	if (ServerSettings::instance()->getCustomRoomsEnabled()) {
+		imperialRoom = createRoom("Imperial Chat", galaxyRoom);
+		imperialRoom->setCanEnter(true);
+		imperialRoom->setAllowSubrooms(false);
+
+		rebelRoom = createRoom("Rebel Chat", galaxyRoom);
+		rebelRoom->setCanEnter(true);
+		rebelRoom->setAllowSubrooms(false);
+	}
 }
 
 void ChatManagerImplementation::initiatePlanetRooms() {
@@ -747,10 +765,37 @@ void ChatManagerImplementation::handleChatRoomMessage(CreatureObject* sender, co
 
 	BaseMessage* msg = new ChatRoomMessage(fullName, server->getGalaxyName(), formattedMessage, roomID);
 
-	// Auction Chat and Planet Chat should adhere to player ignore list
-	if(auctionRoom != NULL && auctionRoom->getRoomID() == roomID) {
+	bool chatLoggingEnabled = ServerSettings::instance()->getChatLoggingEnabled();
+
+	String chatLogMessage = fullName + ": " + formattedMessage.toString();
+
+	if (playerManager == NULL)
+		return;
+
+	if (auctionRoom != NULL && auctionRoom->getRoomID() == roomID) {
+		if (chatLoggingEnabled && sender->isPlayerCreature()) {
+			playerManager->logPlayerAction("auctionChatLog", chatLogMessage);
+		}
+		channel->broadcastMessageCheckIgnore(msg, name);
+	} else if (generalRoom != NULL && generalRoom->getRoomID() == roomID) {
+		if (chatLoggingEnabled && sender->isPlayerCreature()) {
+			playerManager->logPlayerAction("generalChatLog", chatLogMessage);
+		}
 		channel->broadcastMessageCheckIgnore(msg, name);
 	} else if (planetRoom != NULL && planetRoom->getRoomID() == roomID) {
+		if (chatLoggingEnabled && sender->isPlayerCreature()) {
+			playerManager->logPlayerAction("planetChatLog", chatLogMessage);
+		}
+		channel->broadcastMessageCheckIgnore(msg, name);
+	} else if (imperialRoom != NULL && imperialRoom->getRoomID() == roomID) {
+		if (sender->isPlayerCreature()) {
+			playerManager->logPlayerAction("imperialChatLog", chatLogMessage);
+		}
+		channel->broadcastMessageCheckIgnore(msg, name);
+	} else if (rebelRoom != NULL && rebelRoom->getRoomID() == roomID) {
+		if (sender->isPlayerCreature()) {
+			playerManager->logPlayerAction("rebelChatLog", chatLogMessage);
+		}
 		channel->broadcastMessageCheckIgnore(msg, name);
 	} else {
 		channel->broadcastMessage(msg);
@@ -772,6 +817,27 @@ void ChatManagerImplementation::handleChatEnterRoomById(CreatureObject* player, 
 		ChatOnEnteredRoom* coer = new ChatOnEnteredRoom(server->getGalaxyName(), player->getFirstName(), roomID, error, requestID);
 		player->sendMessage(coer);
 		return;
+	}
+
+	String imperial = "imperial";
+	String rebel = "rebel";
+
+	ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
+	if (ghost == NULL)
+		return;
+
+	if (roomID == imperialRoom->getRoomID()) {
+		if (!ghost->hasGodMode() && player->getFaction() != imperial.hashCode()) {
+			player->sendSystemMessage("Error: You can not join this room.");
+			return;
+		}
+	}
+
+	if (roomID == rebelRoom->getRoomID()) {
+		if (!ghost->hasGodMode() && player->getFaction() != rebel.hashCode()) {
+			player->sendSystemMessage("Error: You can not join this room.");
+			return;
+		}
 	}
 
 	//Check if player is allowed to join.
@@ -966,13 +1032,9 @@ void ChatManagerImplementation::broadcastGalaxy(const String& message, const Str
 }
 
 void ChatManagerImplementation::broadcastGalaxy(CreatureObject* player, const String& message) {
-	String firstName = "SKYNET";
-
-	if (player != NULL)
-		firstName = player->getFirstName();
-
 	StringBuffer fullMessage;
-	fullMessage << "[" << firstName << "] " << message;
+
+	fullMessage << "[System Announcement]: " << message;
 
 	Locker locker(_this.getReferenceUnsafeStaticCast());
 	//playerMap->lock();
@@ -983,6 +1045,19 @@ void ChatManagerImplementation::broadcastGalaxy(CreatureObject* player, const St
 		ManagedReference<CreatureObject*> playerObject = playerMap->getNextValue(false);
 
 		playerObject->sendSystemMessage(fullMessage.toString());
+	}
+
+	bool generalChatEnabled = ServerSettings::instance()->getGeneralChatEnabled();
+
+	if (generalChatEnabled) {
+		uint32 roomID = generalRoom->getRoomID();
+		ChatRoom* generalChat = getChatRoom(roomID);
+		UnicodeString formattedMessage(formatMessage(message));
+
+		if (generalChat != NULL) {
+			BaseMessage* msg = new ChatRoomMessage("[SYSTEM ANNOUNCEMENT]", server->getGalaxyName(), message, roomID);
+			generalChat->broadcastMessage(msg);
+		}
 	}
 }
 
@@ -1062,6 +1137,13 @@ void ChatManagerImplementation::broadcastChatMessage(CreatureObject* sourceCreat
 
 			if (spatialChatTypeSkillNeeded.contains(spatialChatType) && !myGhost->hasAbility(spatialChatTypeSkillNeeded.get(spatialChatType)) && !godMode)
 				return;
+		}
+
+		bool chatLoggingEnabled = ServerSettings::instance()->getChatLoggingEnabled();
+
+		if (chatLoggingEnabled && message.length() > 1) {
+			String chatLogMessage = firstName + ": " + message.toString();
+			playerManager->logPlayerAction("spatialChatLog", chatLogMessage);
 		}
 	}
 

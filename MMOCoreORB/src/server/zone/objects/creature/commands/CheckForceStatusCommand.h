@@ -7,6 +7,8 @@
 
 #include "server/zone/managers/jedi/JediManager.h"
 
+#include "conf/ServerSettings.h"
+
 class CheckForceStatusCommand : public QueueCommand {
 public:
 
@@ -23,11 +25,14 @@ public:
 		if (!checkInvalidLocomotions(creature))
 			return INVALIDLOCOMOTION;
 
-		JediManager::instance()->checkForceStatusCommand(creature);
+		if (ServerSettings::instance()->getShrineProgressionEnabled()) {
+			creature->sendSystemMessage("The force you seek, do you? Meditate you must.");
+		} else {
+			JediManager::instance()->checkForceStatusCommand(creature);
+		}
 
 		return SUCCESS;
 	}
-
 };
 
 #endif //CHECKFORCESTATUSCOMMAND_H_

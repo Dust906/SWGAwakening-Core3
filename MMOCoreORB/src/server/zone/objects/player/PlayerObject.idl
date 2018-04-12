@@ -44,6 +44,8 @@ include server.zone.objects.scene.variables.DeltaVector;
 include server.zone.objects.scene.variables.DeltaVectorMap;
 include server.zone.objects.scene.variables.DeltaBitArray;
 
+import server.zone.objects.player.events.SpawnProtectionRemovalTask;
+
 class PlayerObject extends IntangibleObject {
 	protected unsigned int characterBitmask;
 	protected string title;
@@ -270,6 +272,25 @@ class PlayerObject extends IntangibleObject {
 	@rawTemplate(value = "uint32, PlayerQuestData")
 	protected DeltaVectorMap playerQuestsData;
 
+	@dereferenced
+	protected Time spawnProtectionTimestamp;
+	@dereferenced
+	protected Reference<SpawnProtectionRemovalTask> spawnProtectionTask;
+
+	protected string ipAddress;
+	protected int unlockAnnounced;
+	protected boolean opposingFactionArea;
+	protected unsigned long pvpKills;
+	protected unsigned long pvpDeaths;
+	protected unsigned long bountyKills;
+	protected unsigned long pveKills;
+	protected unsigned long pveDeaths;
+	protected unsigned long missionsCompleted;
+	protected int fcBanCount;
+	protected boolean cityTef;
+	protected boolean preVillageJedi;
+	protected boolean pub9Check;
+
 	public static final int LFG = 1;
 	public static final int NEWBIEHELPER = 2;
 	public static final int ROLEPLAYER = 4;
@@ -370,6 +391,21 @@ class PlayerObject extends IntangibleObject {
 		lastPvpRatingUpdate.updateToCurrentTime();
 		
 		Logger.setLoggingName("PlayerObject");
+
+		spawnProtectionTimestamp.updateToCurrentTime();
+		ipAddress = "";
+		unlockAnnounced = 0;
+		opposingFactionArea = false;
+		pvpKills = 0;
+		pvpDeaths = 0;
+		bountyKills = 0;
+		pveKills = 0;
+		pveDeaths = 0;
+		missionsCompleted = 0;
+		fcBanCount = 0;
+		cityTef = false;
+		preVillageJedi = false;
+		pub9Check = false;
 	}
 
 	public void finalize() {
@@ -691,7 +727,7 @@ class PlayerObject extends IntangibleObject {
 
 	public native void activateRecovery();
 
-	public native void activateForcePowerRegen();
+	public native void activateForcePowerRegen(boolean recalculate = false);
 
 	public native void doRecovery(int latency);
 
@@ -1616,13 +1652,13 @@ class PlayerObject extends IntangibleObject {
 	@local
 	public native Time getLastGcwPvpCombatActionTimestamp();
 	
-	public native void updateLastPvpCombatActionTimestamp(boolean updateGcwAction, boolean updateBhAction);
+	public native void updateLastPvpCombatActionTimestamp(boolean updateGcwAction, boolean updateBhAction, int duration = 0);
 
 	public native void updateLastBhPvpCombatActionTimestamp();
 
 	public native void updateLastGcwPvpCombatActionTimestamp();
 
-	public native boolean hasPvpTef();
+	public native boolean hasGcwTef();
 	
 	public native boolean hasBhTef();
 	
@@ -1843,4 +1879,109 @@ class PlayerObject extends IntangibleObject {
 
 		pvpRating = rating;
 	}
+
+	public native void awakeningNotifyOnline();
+
+	@dereferenced
+	@local
+	public native Time getSpawnProtectionTimestamp();
+	public native void updateSpawnProtectionTimestamp();
+	public native boolean hasSpawnProtection();
+	public native void scheduleSpawnProtectionRemovalTask(boolean removeNow = false);
+
+	public void setIpAddress(string address) {
+		ipAddress = address;
+	}
+	public string getIpAddress() {
+		return ipAddress;
+	}
+
+	public void setUnlockAnnounced(int announced) {
+		unlockAnnounced = announced;
+	}
+	public int getUnlockAnnounced() {
+		return unlockAnnounced;
+	}
+
+	public native void resetJedi();
+
+	public boolean isInOpposingArea() {
+		return opposingFactionArea;
+	}
+	public void setIsInOpposingArea(boolean factionArea) {
+		opposingFactionArea = factionArea;
+	}
+
+	public void updatePvpKills() {
+		pvpKills += 1;
+	}
+	public unsigned long getPvpKills() {
+		return pvpKills;
+	}
+	public void updatePvpDeaths() {
+		pvpDeaths += 1;
+	}
+	public unsigned long getPvpDeaths() {
+		return pvpDeaths;
+	}
+	public void updateBountyKills() {
+		bountyKills += 1;
+	}
+	public unsigned long getBountyKills() {
+		return bountyKills;
+	}
+	public void updatePveKills() {
+		pveKills += 1;
+	}
+	public unsigned long getPveKills() {
+		return pveKills;
+	}
+	public void updatePveDeaths() {
+		pveDeaths += 1;
+	}
+	public unsigned long getPveDeaths() {
+		return pveDeaths;
+	}
+	public void updateMissionsCompleted() {
+		missionsCompleted += 1;
+	}
+	public unsigned long getMissionsCompleted() {
+		return missionsCompleted;
+	}
+
+	public boolean hasCityTef() {
+		return cityTef;
+	}
+	public void setHasCityTef(boolean shouldCityTef) {
+		cityTef = shouldCityTef;
+	}
+
+	public native int getJediUnlockVariable(int column);
+
+	public native void setIsGlowing();
+
+	public void setFCBanCount(int fcBan) {
+		fcBanCount = fcBan;
+	}
+	public int getFCBanCount() {
+		return fcBanCount;
+	}
+
+	public native boolean isPvpFlagged();
+
+	public boolean isPreVillageJedi() {
+		return preVillageJedi;
+	}
+	public void setPreVillageJedi(boolean isPreVillageJedi) {
+		preVillageJedi = isPreVillageJedi;
+	}
+
+	public boolean pub9CheckComplete() {
+		return pub9Check;
+	}
+	public void setPub9CheckComplete(boolean complete) {
+		pub9Check = complete;
+	}
+
+	public native void sendJediUnlockMessage();
 }

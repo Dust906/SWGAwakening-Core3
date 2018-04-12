@@ -72,7 +72,10 @@ void GuildManagerImplementation::loadLuaConfig() {
 	Lua* lua = new Lua();
 	lua->init();
 
-	lua->runFile("scripts/managers/guild_manager.lua");
+	bool res = lua->runFile("custom_scripts/managers/guild_manager.lua");
+
+	if (!res)
+		res = lua->runFile("scripts/managers/guild_manager.lua");
 
 	guildUpdateInterval = lua->getGlobalInt("GuildUpdateInterval");
 	requiredMembers = lua->getGlobalInt("RequiredMembers");

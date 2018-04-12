@@ -737,6 +737,14 @@ bool InstallationObjectImplementation::isAttackableBy(CreatureObject* object) {
 			return false;
 		}
 
+		ManagedReference<PlayerObject*> ghost = object->getPlayerObject();
+
+		if (ghost == NULL)
+			return false;
+
+		if (ghost->hasSpawnProtection())
+			return false;
+
 		if ((getPvpStatusBitmask() & CreatureFlag::OVERT) && object->getFactionStatus() != FactionStatus::OVERT) {
 			return false;
 		}

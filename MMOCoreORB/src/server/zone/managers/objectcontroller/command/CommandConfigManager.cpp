@@ -528,7 +528,10 @@ int CommandConfigManager::runSlashCommandsFile(lua_State* L) {
 
 	filename = getStringParameter(L);
 
-	bool res = runFile("scripts/commands/" + filename, L);
+	bool res = runFile("custom_scripts/commands/" + filename, L);
+
+	if (!res)
+		res = runFile("scripts/commands/" + filename, L);
 
 	if (!res)
 		ERROR_CODE = GENERAL_ERROR;
@@ -653,6 +656,24 @@ void CommandConfigManager::parseVariableData(String varName, LuaObject &command,
 			combatCommand->setEffectString(Lua::getStringParameter(L));
 		else if (varName == "trails")
 			combatCommand->setTrails(Lua::getIntParameter(L));
+
+		else if (varName == "frsLightCostMultiplier")
+			combatCommand->setFrsLightCostMultiplier(Lua::getFloatParameter(L));
+		else if (varName == "frsDarkCostMultiplier")
+			combatCommand->setFrsDarkCostMultiplier(Lua::getFloatParameter(L));
+		else if (varName == "frsLightMinDmgMultiplier")
+			combatCommand->setFrsLightMinDmgMultiplier(Lua::getFloatParameter(L));
+		else if (varName == "frsDarkMinDmgMultiplier")
+			combatCommand->setFrsDarkMinDmgMultiplier(Lua::getFloatParameter(L));
+		else if (varName == "frsLightMaxDmgMultiplier")
+			combatCommand->setFrsLightMaxDmgMultiplier(Lua::getFloatParameter(L));
+		else if (varName == "frsDarkMaxDmgMultiplier")
+			combatCommand->setFrsDarkMaxDmgMultiplier(Lua::getFloatParameter(L));
+		else if (varName == "frsLightSpeedMultiplier")
+			combatCommand->setFrsLightSpeedMultiplier(Lua::getFloatParameter(L));
+		else if (varName == "frsDarkSpeedMultiplier")
+			combatCommand->setFrsDarkSpeedMultiplier(Lua::getFloatParameter(L));
+
 		else if (varName == "stateEffects") {
 			LuaObject states(L);
 
@@ -662,7 +683,6 @@ void CommandConfigManager::parseVariableData(String varName, LuaObject &command,
 				combatCommand->addStateEffect(StateEffect(state));
 				state.pop();
 			}
-
 			states.pop();
 		} else if (varName == "dotEffects") {
 			LuaObject dots(L);
@@ -674,7 +694,6 @@ void CommandConfigManager::parseVariableData(String varName, LuaObject &command,
 				//System::out << "count " << combatCommand->getDotEffects()->size()<< endl;
 				dot.pop();
 			}
-
 			dots.pop();
 		} else if (combatCommand->isSquadLeaderCommand()) {
 			SquadLeaderCommand* slCommand = cast<SquadLeaderCommand*>(combatCommand);
@@ -704,6 +723,20 @@ void CommandConfigManager::parseVariableData(String varName, LuaObject &command,
 			jediCommand->setClientEffect(Lua::getStringParameter(L));
 		else if (varName == "speedMod")
 			jediCommand->setSpeedMod(Lua::getFloatParameter(L));
+
+		else if (varName == "frsLightCostMultiplier")
+			jediCommand->setFrsLightCostMultiplier(Lua::getFloatParameter(L));
+		else if (varName == "frsDarkCostMultiplier")
+			jediCommand->setFrsDarkCostMultiplier(Lua::getFloatParameter(L));
+		else if (varName == "frsLightAdditionalCostMultiplier")
+			jediCommand->setFrsLightAdditionalCostMultiplier(Lua::getFloatParameter(L));
+		else if (varName == "frsDarkAdditionalCostMultiplier")
+			jediCommand->setFrsDarkAdditionalCostMultiplier(Lua::getFloatParameter(L));
+		else if (varName == "frsLightEffectMultiplier")
+			jediCommand->setFrsLightEffectMultiplier(Lua::getFloatParameter(L));
+		else if (varName == "frsDarkEffectMultiplier")
+			jediCommand->setFrsDarkEffectMultiplier(Lua::getFloatParameter(L));
+
 		else if (jediCommand->isForceHealCommand()) {
 			ForceHealQueueCommand* healCommand = cast<ForceHealQueueCommand*>(jediCommand);
 			if (varName == "healAmount")
@@ -822,4 +855,6 @@ void CommandConfigManager::registerCommands() {
 	commandFactory.registerCommand<PetPatrolCommand>(String("petPatrol").toLowerCase());
 	commandFactory.registerCommand<PetClearPatrolPointsCommand>(String("petClearPatrolPoints").toLowerCase());
 	commandFactory.registerCommand<PetGetPatrolPointCommand>(String("petGetPatrolPoint").toLowerCase());
+
+
 }

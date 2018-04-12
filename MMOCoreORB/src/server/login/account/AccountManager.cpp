@@ -18,6 +18,8 @@
 
 #include "server/zone/managers/object/ObjectManager.h"
 
+#include "conf/ServerSettings.h"
+
 AccountManager::AccountManager(LoginServer* loginserv) : Logger("AccountManager") {
 	loginServer = loginserv;
 
@@ -53,7 +55,7 @@ void AccountManager::loginAccount(LoginClient* client, Message* packet) {
 	Database::escapeString(password);
 
 	if (!isRequiredVersion(version)) {
-		client->sendErrorMessage("Login Error", "The client you are attempting to connect with does not match that required by the server.");
+		client->sendErrorMessage("Login Error", ServerSettings::instance()->getRevisionError());
 		return;
 	}
 
@@ -110,16 +112,16 @@ Account* AccountManager::validateAccountCredentials(LoginClient* client, const S
 		if (isAutoRegistrationEnabled() && client != NULL) {
 			account = createAccount(username, password, passwordStored);
 		} else {
-			if(client != NULL)
-				client->sendErrorMessage("Login Error", "Automatic registration is currently disabled. Please contact the administrators of the server in order to get an authorized account.");
+			if (client != NULL)
+				client->sendErrorMessage("Login Error", ServerSettings::instance()->getRegisterError());
+
 			return NULL;
 		}
 	}
 
-	if(!account->isActive()) {
-
-		if(client != NULL)
-			client->sendErrorMessage("Account Disabled", "The server administrators have disabled your account.");
+	if (!account->isActive()) {
+		if (client != NULL)
+			client->sendErrorMessage("Account Disabled", ServerSettings::instance()->getActivateError());
 
 		return NULL;
 	}
@@ -133,9 +135,8 @@ Account* AccountManager::validateAccountCredentials(LoginClient* client, const S
 	}
 
 	if (passwordStored != passwordHashed) {
-
-		if(client != NULL)
-			client->sendErrorMessage("Wrong Password", "The password you entered was incorrect.");
+		if (client != NULL)
+			client->sendErrorMessage("Wrong Password", ServerSettings::instance()->getPasswordError());
 
 		return NULL;
 	}
@@ -144,10 +145,10 @@ Account* AccountManager::validateAccountCredentials(LoginClient* client, const S
 		updateHash(username, password);
 
 	//Check if they are banned
-	if(account->isBanned()) {
-
+	if (account->isBanned()) {
 		StringBuffer reason;
-		reason << "Your account has been banned from the server by the administrators.\n\n";
+
+		reason << ServerSettings::instance()->getBannedError();
 		int totalBan = account->getBanExpires() - time(0);
 
 		int daysBanned = floor((float)totalBan / 60.f / 60.f / 24.f);

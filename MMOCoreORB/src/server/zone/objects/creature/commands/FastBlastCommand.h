@@ -22,6 +22,10 @@ public:
 		if (!checkInvalidLocomotions(creature))
 			return INVALIDLOCOMOTION;
 
+		ManagedReference<WeaponObject*> weapon = creature->getWeapon();
+		if (weapon != NULL && weapon->isHeavyWeapon())
+			return INVALIDWEAPON;
+
 		return doCombatAction(creature, target);
 	}
 

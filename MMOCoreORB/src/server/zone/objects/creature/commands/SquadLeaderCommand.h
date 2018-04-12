@@ -11,6 +11,8 @@
 #include "CombatQueueCommand.h"
 #include "server/zone/objects/group/GroupObject.h"
 
+#include "conf/ServerSettings.h"
+
 class SquadLeaderCommand : public CombatQueueCommand {
 protected:
 	String action;
@@ -87,15 +89,25 @@ public:
 		uint32 targetFaction = target->getFaction();
 		int targetStatus = targetCreo->getFactionStatus();
 
-		if (leaderFaction == 0) {
-			if (targetFaction != 0 && targetStatus > FactionStatus::ONLEAVE)
-				return false;
-		} else if (targetFaction != 0) {
-			if (leaderFaction != targetFaction && targetStatus > FactionStatus::ONLEAVE)
-				return false;
+		if (ServerSettings::instance()->getTefEnabled()) {
+			if (leaderFaction == 0) {
+				if (targetFaction != 0 && ghost->isPvpFlagged())
+					return false;
+			} else if (targetFaction != 0) {
+				if (leaderFaction != targetFaction && ghost->isPvpFlagged())
+					return false;
+			}
+		} else {
+			if (leaderFaction == 0) {
+				if (targetFaction != 0 && targetStatus > FactionStatus::ONLEAVE)
+					return false;
+			} else if (targetFaction != 0) {
+				if (leaderFaction != targetFaction && targetStatus > FactionStatus::ONLEAVE)
+					return false;
 
-			if (leaderFaction == targetFaction && targetStatus > leader->getFactionStatus())
-				return false;
+				if (leaderFaction == targetFaction && targetStatus > leader->getFactionStatus())
+					return false;
+			}
 		}
 
 		if (target->getParentRecursively(SceneObjectType::BUILDING) != leader->getParentRecursively(SceneObjectType::BUILDING))

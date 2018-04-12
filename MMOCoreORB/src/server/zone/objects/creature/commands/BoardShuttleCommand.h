@@ -21,6 +21,8 @@
 #include "server/zone/managers/planet/PlanetTravelPoint.h"
 #include "server/zone/objects/group/GroupObject.h"
 
+#include "server/zone/objects/player/FactionStatus.h"
+
 //#define ENABLE_CITY_TRAVEL_LIMIT
 
 class BoardShuttleCommand : public QueueCommand {
@@ -91,6 +93,18 @@ public:
 		if (!closestPoint->isPoint("naboo","Theed Spaceport")){
 			if (!planetManager->checkShuttleStatus(creature, shuttle))
 				return GENERALERROR;
+		}
+
+		PlayerObject* ghost = creature->getPlayerObject();
+
+		if (ghost == NULL)
+			return GENERALERROR;
+
+		if (creature->getFactionStatus() == FactionStatus::OVERT || ghost->hasGcwTef() || ghost->hasBhTef()) {
+			if (creature->isInCombat()) {
+				creature->sendSystemMessage("You can not use this shuttle while in PvP combat.");
+				return GENERALERROR;
+			}
 		}
 
 		uint64 ticketoid = target;
@@ -193,6 +207,9 @@ public:
 			x = p.getPositionX() + sin(dirRadians) * distance;
 			y = p.getPositionY() + cos(dirRadians) * distance;
 		}
+
+		if (departCity != NULL)
+			departCity->notifyExit(creature);
 
 		creature->switchZone(arrivalZone->getZoneName(), x, p.getPositionZ(), y, 0);
 

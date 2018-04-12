@@ -118,7 +118,10 @@ void PlanetManagerImplementation::loadLuaConfig() {
 	Lua* lua = new Lua();
 	lua->init();
 
-	lua->runFile("scripts/managers/planet_manager.lua");
+	bool res = lua->runFile("custom_scripts/managers/planet_manager.lua");
+
+	if (!res)
+		res = lua->runFile("scripts/managers/planet_manager.lua");
 
 	//Get's the configuration settings object for this planet.
 	LuaObject luaObject = lua->getGlobalObject(planetName);

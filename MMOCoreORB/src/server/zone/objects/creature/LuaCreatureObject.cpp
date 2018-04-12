@@ -124,7 +124,7 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ "isInCombat", &LuaCreatureObject::isInCombat },
 		{ "healDamage", &LuaCreatureObject::healDamage },
 		{ "getGroupID", &LuaCreatureObject::getGroupID },
-		{ "enhanceCharacter", &LuaCreatureObject::enhanceCharacter },
+		{ "builderEnhanceCharacter", &LuaCreatureObject::builderEnhanceCharacter },
 		{ "setWounds", &LuaCreatureObject::setWounds },
 		{ "setShockWounds", &LuaCreatureObject::setShockWounds },
 		{ "getForceSensitiveSkillCount", &LuaCreatureObject::getForceSensitiveSkillCount },
@@ -424,7 +424,7 @@ int LuaCreatureObject::surrenderSkill(lua_State* L) {
 	String value = lua_tostring(L, -1);
 
 	SkillManager* skillManager = SkillManager::instance();
-	skillManager->surrenderSkill(value, realObject, true);
+	skillManager->surrenderSkill(value, realObject, true, false);
 	return 0;
 }
 
@@ -949,9 +949,9 @@ int LuaCreatureObject::getGroupID(lua_State* L) {
 	return 1;
 }
 
-int LuaCreatureObject::enhanceCharacter(lua_State* L) {
+int LuaCreatureObject::builderEnhanceCharacter(lua_State* L) {
 	PlayerManager* playerManager = realObject->getZoneServer()->getPlayerManager();
-	playerManager->enhanceCharacter(realObject);
+	playerManager->builderEnhanceCharacter(realObject);
 
 	return 0;
 }

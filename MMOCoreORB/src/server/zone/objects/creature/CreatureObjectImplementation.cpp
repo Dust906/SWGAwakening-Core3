@@ -84,6 +84,8 @@
 #include "engine/core/TaskManager.h"
 #include "server/zone/objects/creature/credits/CreditObject.h"
 
+#include "conf/ServerSettings.h"
+
 float CreatureObjectImplementation::DEFAULTRUNSPEED = 5.376;
 
 void CreatureObjectImplementation::initializeTransientMembers() {
@@ -2202,8 +2204,10 @@ bool CreatureObjectImplementation::canFeignDeath() {
 	if(defenderCount > maxDefenders)
 		defenderCount = maxDefenders;
 
+	int modIncrease = 10;
+
 	for(int i=0; i<defenderCount; i++) {
-		if(System::random(100) > skillMod)
+		if(System::random(100) > skillMod + modIncrease)
 			return false;
 	}
 
@@ -2886,14 +2890,22 @@ bool CreatureObjectImplementation::isAggressiveTo(CreatureObject* object) {
 	if (ghost->isOnLoadScreen())
 		return false;
 
-	if (ConfigManager::instance()->getPvpMode() && isPlayerCreature())
-		return true;
+	if (ghost->hasSpawnProtection() || targetGhost->hasSpawnProtection())
+		return false;
 
 	if (CombatManager::instance()->areInDuel(object, asCreatureObject()))
 		return true;
 
-	if ((pvpStatusBitmask & CreatureFlag::OVERT) && (object->getPvpStatusBitmask() & CreatureFlag::OVERT) && object->getFaction() != getFaction())
-		return true;
+	if (getGroupID() != 0 && getGroupID() == object->getGroupID())
+		return false;
+
+	if (ServerSettings::instance()->getTefEnabled()) {
+		if (ghost->isPvpFlagged() && object->getFaction() != 0 && object->getFaction() != getFaction())
+			return true;
+	} else {
+		if ((pvpStatusBitmask & CreatureFlag::OVERT) && (object->getPvpStatusBitmask() & CreatureFlag::OVERT) && object->getFaction() != getFaction())
+			return true;
+	}
 
 	if (ghost->hasBhTef() && (hasBountyMissionFor(object) || object->hasBountyMissionFor(asCreatureObject()))) {
 		return true;
@@ -2965,11 +2977,12 @@ bool CreatureObjectImplementation::isAttackableBy(CreatureObject* object, bool b
 
 	if (isPlayerCreature()) {
 		PlayerObject* ghost = getPlayerObject();
-		if (ghost != NULL) {
-			if (ghost->isOnLoadScreen())
-				return false;
-			if (ConfigManager::instance()->getPvpMode())
-				return true;
+
+		if (ghost != NULL && ghost->isOnLoadScreen()) {
+			return false;
+
+		if (ghost != NULL && ghost->hasSpawnProtection())
+			return false;
 		}
 	}
 
@@ -2992,11 +3005,18 @@ bool CreatureObjectImplementation::isAttackableBy(CreatureObject* object, bool b
 		if(!object->isRebel() && !object->isImperial())
 			return true;
 
-		if(getFaction() == 0 || getFaction() == object->getFaction())
+		if (getFaction() == 0 || getFaction() == object->getFaction()) {
 			return false;
-		else if (isPlayerCreature() && getFactionStatus() == FactionStatus::ONLEAVE)
-			return false;
-
+		} else if (isPlayerCreature()) {
+			if (ServerSettings::instance()->getTefEnabled()) {
+				PlayerObject* ghost = getPlayerObject();
+				if (ghost != NULL && !ghost->isPvpFlagged())
+					return false;
+			} else {
+				if (getFactionStatus() == FactionStatus::ONLEAVE)
+					return false;
+			}
+		}
 		return true;
 	}
 
@@ -3006,19 +3026,27 @@ bool CreatureObjectImplementation::isAttackableBy(CreatureObject* object, bool b
 	if (ghost == NULL || targetGhost == NULL)
 		return false;
 
+	if (targetGhost->hasSpawnProtection())
+		return false;
+
 	bool areInDuel = (ghost->requestedDuelTo(object) && targetGhost->requestedDuelTo(asCreatureObject()));
 
 	if (areInDuel)
 		return true;
 
-	if (object->hasBountyMissionFor(asCreatureObject()) || (ghost->hasBhTef() && hasBountyMissionFor(object)))
-		return true;
-
 	if (getGroupID() != 0 && getGroupID() == object->getGroupID())
 		return false;
 
-	if ((pvpStatusBitmask & CreatureFlag::OVERT) && (object->getPvpStatusBitmask() & CreatureFlag::OVERT) && object->getFaction() != getFaction())
+	if (object->hasBountyMissionFor(asCreatureObject()) || (ghost->hasBhTef() && hasBountyMissionFor(object)))
 		return true;
+
+	if (ServerSettings::instance()->getTefEnabled()) {
+		if (ghost->isPvpFlagged() && object->getFaction() != 0 && object->getFaction() != getFaction())
+			return true;
+	} else {
+		if ((pvpStatusBitmask & CreatureFlag::OVERT) && (object->getPvpStatusBitmask() & CreatureFlag::OVERT) && object->getFaction() != getFaction())
+			return true;
+	}
 
 	ManagedReference<GuildObject*> guildObject = guild.get();
 	if (guildObject != NULL && guildObject->isInWaringGuild(object))
@@ -3042,11 +3070,6 @@ bool CreatureObjectImplementation::isHealableBy(CreatureObject* object) {
 	if (ghost == NULL)
 		return false;
 
-	if (ghost->hasBhTef())
-		return false;
-
-	//if ((pvpStatusBitmask & CreatureFlag::OVERT) && (object->getPvpStatusBitmask() & CreatureFlag::OVERT) && object->getFaction() != getFaction())
-
 	CreatureObject* targetCreo = asCreatureObject();
 
 	if (isPet()) {
@@ -3060,20 +3083,26 @@ bool CreatureObjectImplementation::isHealableBy(CreatureObject* object) {
 	uint32 targetFactionStatus = targetCreo->getFactionStatus();
 	uint32 currentFactionStatus = object->getFactionStatus();
 
-	if (getFaction() != object->getFaction() && !(targetFactionStatus == FactionStatus::ONLEAVE))
+	PlayerObject* targetGhost = targetCreo->getPlayerObject();
+	if (targetGhost == NULL)
 		return false;
 
-	if ((targetFactionStatus == FactionStatus::OVERT) && !(currentFactionStatus == FactionStatus::OVERT))
-		return false;
-
-	if (!(targetFactionStatus == FactionStatus::ONLEAVE) && (currentFactionStatus == FactionStatus::ONLEAVE))
-		return false;
-
-	if(targetCreo->isPlayerCreature()) {
-		PlayerObject* targetGhost = targetCreo->getPlayerObject();
-		if(targetGhost != NULL && targetGhost->hasBhTef())
+	if (ServerSettings::instance()->getTefEnabled()) {
+		if (object->getFaction() == 0 && targetGhost->isPvpFlagged())
+			return false;
+		if (getFaction() != object->getFaction() && (targetGhost->isPvpFlagged()))
+			return false;
+	} else {
+		if (getFaction() != object->getFaction() && !(targetFactionStatus == FactionStatus::ONLEAVE))
+			return false;
+		if ((targetFactionStatus == FactionStatus::OVERT) && !(currentFactionStatus == FactionStatus::OVERT))
+			return false;
+		if (!(targetFactionStatus == FactionStatus::ONLEAVE) && (currentFactionStatus == FactionStatus::ONLEAVE))
 			return false;
 	}
+
+	if (ghost->hasBhTef() || targetGhost->hasBhTef())
+		return false;
 
 	return true;
 }

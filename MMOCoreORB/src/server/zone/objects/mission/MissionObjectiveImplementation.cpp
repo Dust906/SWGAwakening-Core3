@@ -229,6 +229,7 @@ void MissionObjectiveImplementation::awardReward() {
 	}
 
 	if (playerCount > players.size()) {
+		divisor = players.size();
 		owner->sendSystemMessage("@mission/mission_generic:group_too_far"); // Mission Alert! Some group members are too far away from the group to receive their reward and and are not eligible for reward.
 	}
 
@@ -255,6 +256,10 @@ void MissionObjectiveImplementation::awardReward() {
 	int creditsDistributed = dividedReward * players.size();
 
 	StatisticsManager::instance()->completeMission(mission->getTypeCRC(), creditsDistributed);
+
+	PlayerObject* ownerGhost = owner->getPlayerObject();
+	if (ownerGhost != NULL)
+		ownerGhost->updateMissionsCompleted();
 }
 
 Vector3 MissionObjectiveImplementation::getEndPosition() {

@@ -614,10 +614,13 @@ void DirectorManager::initializeLuaEngine(Lua* luaEngine) {
 }
 
 int DirectorManager::loadScreenPlays(Lua* luaEngine) {
-	bool res = luaEngine->runFile("scripts/screenplays/screenplays.lua");
+	bool res = luaEngine->runFile("custom_scripts/screenplays/screenplays.lua");
 
 	if (!DEBUG_MODE)
 		info("Loaded " + String::valueOf(instance()->screenPlays.size()) + " screenplays.", true);
+
+	if (!res)
+		res = luaEngine->runFile("scripts/screenplays/screenplays.lua");
 
 	if (!res)
 		return 1;
@@ -915,14 +918,17 @@ int DirectorManager::includeFile(lua_State* L) {
 
 	int oldError = ERROR_CODE;
 
-	bool ret = Lua::runFile("scripts/screenplays/" + filename, L);
+	bool ret = Lua::runFile("custom_scripts/screenplays/" + filename, L);
+
+	if (!ret)
+		ret = Lua::runFile("scripts/screenplays/" + filename, L);
 
 	if (!ret) {
 		ERROR_CODE = GENERAL_ERROR;
 
-		DirectorManager::instance()->error("running file: scripts/screenplays/" + filename);
+		DirectorManager::instance()->error("running file: screenplays/" + filename);
 	} else if (!oldError && ERROR_CODE) {
-		DirectorManager::instance()->error("running file: scripts/screenplays/" + filename);
+		DirectorManager::instance()->error("running file: screenplays/" + filename);
 	}
 
 	return 0;

@@ -28,6 +28,11 @@ public:
 		int cash = Integer::valueOf(args->get(0).toString());
 		int bank = Integer::valueOf(args->get(1).toString());
 
+		if (cash < 0)
+			cash = 0;
+		if (bank < 0)
+			bank = 0;
+
 		SuiBankTransferBox* suiBank = cast<SuiBankTransferBox*>( sui);
 
 		ManagedReference<SceneObject*> bankObject = suiBank->getBank();

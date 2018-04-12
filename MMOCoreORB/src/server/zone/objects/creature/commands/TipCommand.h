@@ -33,6 +33,20 @@ private:
 			return GENERALERROR;
 		}
 
+		PlayerManager* playerManager = server->getPlayerManager();
+		if (playerManager != NULL && amount >= 5000000) {
+			StringBuffer logEntry;
+			logEntry << player->getFirstName() << " cash tipped " << amount << " credits to " << targetPlayer->getFirstName();
+			playerManager->logPlayerAction("playerTradeLog", logEntry.toString());
+		}
+
+		PlayerObject* ghost = player->getPlayerObject();
+		if (playerManager != NULL && ghost != NULL && ghost->hasGodMode()) {
+			StringBuffer logEntry;
+			logEntry << player->getFirstName() << " cash tipped " << amount << " credits to " << targetPlayer->getFirstName();
+			playerManager->logPlayerAction("adminTradeLog", logEntry.toString());
+		}
+
 		// We have a target, who is on-line, in range, with sufficient funds.
 		// Lock target player to prevent simultaneous tips to not register correctly.
 

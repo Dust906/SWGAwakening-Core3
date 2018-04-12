@@ -11,6 +11,8 @@
 #include "server/zone/managers/crafting/labratories/DroidMechanics.h"
 #include "engine/engine.h"
 
+#include "server/zone/managers/collision/CollisionManager.h"
+
 class PetThrowCommand : public QueueCommand {
 public:
 	PetThrowCommand(const String& name, ZoneProcessServer* server)
@@ -59,9 +61,16 @@ public:
 			return GENERALERROR;
 		}
 
-		// target must be a creature
+		// target must be a creature or jedi in bounty mission
 		Reference<CreatureObject*> target = server->getZoneServer()->getObject(targetID, true).castTo<CreatureObject*>();
-		if (target == NULL || !target->isCreature()) {
+
+		if (target != NULL && target->isPlayerCreature()) {
+			if (!owner->hasSkill("combat_bountyhunter_master") || !owner->hasBountyMissionFor(target)) {
+				droid->showFlyText("npc_reaction/flytext","confused", 204, 0, 0);  // "?!!?!?!"
+				owner->sendSystemMessage("@pet/droid_modules:invalid_trap_target"); // "That is not a valid target."
+				return INVALIDTARGET;
+			}
+		} else if (target == NULL || !target->isCreature()) {
 			droid->showFlyText("npc_reaction/flytext","confused", 204, 0, 0);  // "?!!?!?!"
 			owner->sendSystemMessage("@pet/droid_modules:invalid_trap_target"); // "That is not a valid target."
 			return INVALIDTARGET;
@@ -79,6 +88,13 @@ public:
 			droid->showFlyText("npc_reaction/flytext","confused", 204, 0, 0);  // "?!!?!?!"
 			owner->sendSystemMessage("@pet/droid_modules:target_too_far"); // "That target is out of range."
 			return TOOFAR;
+		}
+
+		// droid must have line of sight to target
+		if (!CollisionManager::checkLineOfSight(droid, target)) {
+				droid->showFlyText("npc_reaction/flytext","confused", 204, 0, 0);  // "?!!?!?!"
+				owner->sendSystemMessage("Your droid does not have a line of sight to the target.");
+				return GENERALERROR;
 		}
 
 		// check droid state
@@ -123,6 +139,10 @@ public:
 				owner->sendSystemMessage("@pet/droid_modules:insufficient_skill");
 				return GENERALERROR;
 			}
+
+			// MBH able to use adhesive trap without Scout x4xx
+			if (owner->hasSkill("combat_bountyhunter_master"))
+				trappingSkill += 25;
 
 			/// Skill too low check the player must be able to use the trap
 			if (trappingSkill < trapData->getSkillRequired()) {

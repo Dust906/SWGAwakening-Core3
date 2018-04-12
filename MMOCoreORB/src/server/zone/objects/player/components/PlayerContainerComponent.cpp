@@ -160,6 +160,7 @@ int PlayerContainerComponent::notifyObjectInserted(SceneObject* sceneObject, Sce
 
 		if (object->isRobeObject()) {
 			ghost->setForcePowerMax(creo->getSkillMod("jedi_force_power_max"));
+			VisibilityManager::instance()->increaseVisibility(creo, VisibilityManager::ROBEVISMOD);
 		} else if (object->isWeaponObject()) {
 			WeaponObject* weaponObject = cast<WeaponObject*>(object);
 			if (weaponObject->isJediWeapon()) {

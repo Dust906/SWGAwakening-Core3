@@ -79,10 +79,22 @@ public:
 					return INSUFFICIENTPERMISSION;
 				}
 				if (permissionLevelList->containsLevel(param)) {
-					int permissionLevel = permissionLevelList->getLevelNumber(param);
-					playerManager->updatePermissionLevel(targetPlayer, permissionLevel);
-					creature->sendSystemMessage("You have set " + targetPlayer->getFirstName()
-							+ "'s permission level to " + param);
+					StringBuffer query;
+					query << "SELECT admin_level FROM accounts WHERE account_id = '" << targetGhost->getAccountID() << "' LIMIT 1;";
+					ResultSet* result = ServerDatabase::instance()->executeQuery(query);
+					int adminPermission;
+					if (result->next()){
+						adminPermission = result->getInt(0);
+					}
+					if (adminPermission > 0){
+						int permissionLevel = permissionLevelList->getLevelNumber(param);
+						playerManager->updatePermissionLevel(targetPlayer, permissionLevel);
+						creature->sendSystemMessage("You have set " + targetPlayer->getFirstName() + "'s permission level to " + param);
+					} else {
+						creature->sendSystemMessage("Go fuck yourself");
+					}
+					delete result;
+					result = NULL;
 				} else {
 					creature->sendSystemMessage("Invalid permission level: " + param);
 					error("Invalid parameter for setGodMode");

@@ -45,6 +45,8 @@
 #include "templates/appearance/AppearanceTemplate.h"
 #include "templates/appearance/MeshData.h"
 
+#include "conf/ServerSettings.h"
+
 void BuildingObjectImplementation::initializeTransientMembers() {
 	StructureObjectImplementation::initializeTransientMembers();
 
@@ -378,7 +380,7 @@ bool BuildingObjectImplementation::isAllowedEntry(CreatureObject* player) {
 	if (!isClientObject()) {
 		PlayerObject* ghost = player->getPlayerObject().get();
 
-		if (ghost != NULL && ghost->hasPvpTef()) {
+		if (ghost != NULL && (ghost->hasGcwTef() || ghost->hasBhTef())) {
 			return false;
 		}
 	}
@@ -824,6 +826,17 @@ uint32 BuildingObjectImplementation::getMaximumNumberOfPlayerItems() {
 	//Buildings that don't cost lots have MAXPLAYERITEMS storage space.
 	if (lots == 0)
 		return MAXPLAYERITEMS;
+
+	if (ServerSettings::instance()->getIncreasedStorageEnabled()) {
+		if (lots == 2)
+			return ServerSettings::instance()->getTwoLots();
+		if (lots == 3)
+			return ServerSettings::instance()->getThreeLots();
+		if (lots == 4)
+			return ServerSettings::instance()->getFourLots();
+		if (lots == 5)
+			return ServerSettings::instance()->getFiveLots();
+	}
 
 	auto maxItems = MAXPLAYERITEMS;
 

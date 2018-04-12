@@ -27,6 +27,8 @@
 
 #include "engine/core/MetricsManager.h"
 
+#include "conf/ServerSettings.h"
+
 ManagedReference<ZoneServer*> ServerCore::zoneServerRef = NULL;
 SortedVector<String> ServerCore::arguments;
 bool ServerCore::truncateAllData = false;
@@ -55,6 +57,8 @@ ServerCore::ServerCore(bool truncateDatabases, SortedVector<String>& args) :
 	features = NULL;
 
 	handleCmds = true;
+
+	serverSettings = ServerSettings::instance();
 }
 
 class ZoneStatisticsTask: public Task {
@@ -140,6 +144,14 @@ void ServerCore::initialize() {
 
 		NavMeshManager::instance()->initialize(configManager->getMaxNavMeshJobs(), zoneServer);
 
+		if (statusServer != NULL) {
+			int statusPort = configManager->getStatusPort();
+			int statusAllowedConnections =
+					configManager->getStatusAllowedConnections();
+
+			statusServer->start(statusPort, statusAllowedConnections);
+		}
+
 		if (zoneServer != NULL) {
 			int zonePort = configManager->getZoneServerPort();
 
@@ -181,14 +193,6 @@ void ServerCore::initialize() {
 			}
 
 			zoneServer->start(zonePort, zoneAllowedConnections);
-		}
-
-		if (statusServer != NULL) {
-			int statusPort = configManager->getStatusPort();
-			int statusAllowedConnections =
-					configManager->getStatusAllowedConnections();
-
-			statusServer->start(statusPort, statusAllowedConnections);
 		}
 
 		if (webServer != NULL) {
@@ -625,7 +629,10 @@ void ServerCore::handleCommands() {
 
 void ServerCore::processConfig() {
 	if (!configManager->loadConfigData())
-		info("missing config file.. loading default values\n");
+		info("Missing config file, loading default values.\n");
+
+	if (!serverSettings->loadServerSettingsData())
+		info("Server Settings file missing, loading default values.\n");
 
 	//if (!features->loadFeatures())
 	//info("Problem occurred trying to load features.lua");

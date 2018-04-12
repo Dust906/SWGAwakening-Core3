@@ -37,18 +37,13 @@ include server.zone.managers.player.JukeboxSong;
 include server.zone.managers.player.QuestInfo;
 include server.zone.objects.player.badges.Badge;
 include system.util.Vector;
+import system.util.VectorMap;
 include system.lang.ref.Reference;
 include server.zone.managers.player.XpBonusList;
 
 @dirty
 class PlayerManager extends Observer implements Logger {
 	transient ZoneProcessServer processor;
-
-	// Used for frog/gm buffs
-	protected int performanceBuff;
-	protected int medicalBuff;
-	protected int performanceDuration;
-	protected int medicalDuration;
 
 	protected int baseStoredCreaturePets;
 	protected int baseStoredFactionPets;
@@ -60,6 +55,42 @@ class PlayerManager extends Observer implements Logger {
 	
 	@dereferenced
 	protected XpBonusList xpBonusList;
+
+	protected int adminperformanceBuff;
+	protected int adminmedicalBuff;
+	protected int adminperformanceDuration;
+	protected int adminmedicalDuration;
+
+	protected int terminalPerformanceBuff;
+	protected int terminalMedicalBuff;
+	protected int terminalPerformanceDuration;
+	protected int terminalMedicalDuration;
+
+	protected int builderPerformanceBuff;
+	protected int builderMedicalBuff;
+	protected int builderPerformanceDuration;
+	protected int builderMedicalDuration;
+
+	@dereferenced
+	private transient Logger adminTradeLog;
+	@dereferenced
+	private transient Logger playerTradeLog;
+	@dereferenced
+	private transient Logger auctionChatLog;
+	@dereferenced
+	private transient Logger generalChatLog;
+	@dereferenced
+	private transient Logger planetChatLog;
+	@dereferenced
+	private transient Logger spatialChatLog;
+	@dereferenced
+	private transient Logger imperialChatLog;
+	@dereferenced
+	private transient Logger rebelChatLog;
+	@dereferenced
+	private transient Logger banLog;
+	@dereferenced
+	private transient Logger frsKillLog;
 
 	@dereferenced
 	private SortedVector<int> veteranRewardMilestones;
@@ -108,11 +139,7 @@ class PlayerManager extends Observer implements Logger {
 	@local
 	public native StartingLocation getStartingLocation(final string city);
 
-	/**
-	 * Kicks a user
-	 *
-	 */
-	public native boolean kickUser(final string name, final string admin, string reason, boolean doBan = true);
+	public native boolean kickUser(final string name, final string admin, int duration, string reason);
 
 	@local
 	public native boolean createPlayer(ClientCreateCharacterCallback callback);
@@ -385,7 +412,7 @@ class PlayerManager extends Observer implements Logger {
 
 	public native void finishHologrind(CreatureObject player);
 
-	public native string banAccount(PlayerObject admin, Account account, unsigned int seconds, final string reason);	
+	public native string banAccount(PlayerObject admin, Account account, unsigned int minutes, final string reason);
 	public native string unbanAccount(PlayerObject admin, Account account, final string reason);	
 	public native string banFromGalaxy(PlayerObject admin, Account account, final unsigned int galaxy, unsigned int seconds, final string reason);	
 	public native string unbanFromGalaxy(PlayerObject admin, Account account, final unsigned int galaxy, final string reason);	
@@ -452,12 +479,11 @@ class PlayerManager extends Observer implements Logger {
 
 	public native boolean doBurstRun(CreatureObject player, float hamModifier, float cooldownModifier);
 
-	/**
-	 * Enhances the target character with doc/ent buffs
-	 * @pre { player is locked }
-	 * @post { player is locked }
-	 */
-	public native void enhanceCharacter(CreatureObject player);
+	public native void adminEnhanceCharacter(CreatureObject player);
+
+	public native void terminalEnhanceCharacter(CreatureObject player);
+
+	public native void builderEnhanceCharacter(CreatureObject player);
 
 	/**
 	 * Creates and adds buff to Player
@@ -512,7 +538,13 @@ class PlayerManager extends Observer implements Logger {
 	@local
 	@arg1preLocked
 	public native void doPvpDeathRatingUpdate(CreatureObject player, ThreatMap threatMap);
-	
+
+	public native string systemBanAccount(Account account, unsigned int minutes, final string reason);
+
+	public native void logPlayerAction(final string logName, final string message);
+
+	public native void updatePvPKillCount(CreatureObject player);
+
 	private native void loadXpBonusList();
 	public native float getSpeciesXpModifier(final string species, final string xpType);
 }

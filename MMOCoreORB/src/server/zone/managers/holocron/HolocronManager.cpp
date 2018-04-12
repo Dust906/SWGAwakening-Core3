@@ -8,30 +8,29 @@
 #include "HolocronManager.h"
 #include "server/zone/ZoneClientSession.h"
 #include "server/zone/ZoneServer.h"
-//#include "server/zone/packets/ui/CreateTicketResponseMessage.h"
+#include "server/zone/packets/ui/CreateTicketResponseMessage.h"
 #include "server/zone/packets/ui/RequestCategoriesResponseMessage.h"
 #include "server/db/MantisDatabase.h"
 #include "server/login/account/AccountManager.h"
 #include "BugCategory.h"
 
 void HolocronManager::loadBugCategories() {
-	return;
-
-	String query = "SELECT `category` FROM `" + MantisDatabase::getTablePrefix() + "project_category_table` WHERE project_id = 1;";
+	String query = "SELECT `id`, `name` FROM `" + MantisDatabase::getTablePrefix() + "category_table` WHERE project_id = 1;";
 
 	Reference<ResultSet*> result = NULL;
 
 	try {
-		result = MantisDatabase::instance()->executeQuery(query);
+		/*result = MantisDatabase::instance()->executeQuery(query);
 
 		while (result->next()) {
-			UnicodeString categoryName = result->getString(0);
-			BugCategory category(categoryName, 0); //Category Id is also irrelevant to Mantis.
+			int categoryId = result->getInt(0);
+			UnicodeString categoryName = result->getString(1);
+			BugCategory category(categoryName, categoryId); //Category Id is also irrelevant to Mantis.
 			category.addCategory(BugCategory("None", 0, 1, 1)); //Mantis doesn't allow sub categories. Kill it here.
 			categories.put(category);
 		}
 
-		info("Loaded " + String::valueOf(categories.size()) + " categories from Mantis.", true);
+		info("Loaded " + String::valueOf(categories.size()) + " categories from Mantis.", true);*/
 
 	} catch (DatabaseException& e) {
 		info(e.getMessage(), true);
@@ -47,10 +46,7 @@ void HolocronManager::sendRequestCategoriesResponseTo(ZoneClientSession* client)
 	client->sendMessage(rcrm);
 }
 
-void HolocronManager::submitTicket(ZoneClientSession* client, const UnicodeString& ticketBody) {
-	//return; // disabled for now
-
-
+void HolocronManager::submitTicket(ZoneClientSession* client, int categoryId, const UnicodeString& ticketBody) {
 	String sanitizedBody(ticketBody.toString());
 	Database::escapeString(sanitizedBody);
 
@@ -66,18 +62,15 @@ void HolocronManager::submitTicket(ZoneClientSession* client, const UnicodeStrin
 
 		uint32 bugTextId = (uint32) result->getLastAffectedRow();
 		uint32 reporterId = getReporterId(client);
-		String category = getTokenValue("Bug Type: ", ticketBody);
 		uint32 sev = getSeverityFromString(getTokenValue("Severity: ", ticketBody));
 		uint32 rep = getReproducibilityFromString(getTokenValue("Repeatable: ", ticketBody));
-
-		Database::escapeString(category);
 
 		Time now;
 		uint32 timestamp = now.getTime();
 
 		StringBuffer insert;
-		insert << "INSERT INTO " << MantisDatabase::getTablePrefix() << "bug_table (project_id, reporter_id, severity, reproducibility, category, date_submitted, last_updated, bug_text_id, summary) VALUES (";
-		insert << "1, " << reporterId << ", " << sev << ", " << rep << ", '" << category << "', FROM_UNIXTIME(" << timestamp << "), FROM_UNIXTIME(" << timestamp << "), " << bugTextId << ", '" << summary << "');";
+		insert << "INSERT INTO " << MantisDatabase::getTablePrefix() << "bug_table (`id`, `project_id`, `reporter_id`, `severity`, `reproducibility`, `bug_text_id`, `category_id`, `date_submitted`, `last_updated`)";
+		insert << " VALUES (" << bugTextId << ", " << "1, " << reporterId << ", " << sev << ", " << rep << ", " << bugTextId << ", "  << categoryId << ", " << timestamp <<  ", " << timestamp << ");";
 
 		MantisDatabase::instance()->executeStatement(insert.toString());
 

@@ -27,6 +27,9 @@
 #include "server/zone/objects/installation/InstallationObject.h"
 #include "server/zone/packets/object/ShowFlyText.h"
 
+#include "conf/ServerSettings.h"
+#include "server/zone/objects/group/GroupObject.h"
+
 #define COMBAT_SPAM_RANGE 85
 
 bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defender, bool lockDefender, bool allowIncapTarget) {
@@ -71,16 +74,24 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
 		ManagedReference<WeaponObject*> weapon = attacker->getWeapon();
 
 		if (weapon != NULL && weapon->isJediWeapon())
-			VisibilityManager::instance()->increaseVisibility(attacker, 25);
+			VisibilityManager::instance()->increaseVisibility(attacker, 100);
 	}
 
 	Locker clocker(defender, attacker);
 
 	if (creo != NULL && creo->isPlayerCreature() && !creo->hasDefender(attacker)) {
-		ManagedReference<WeaponObject*> weapon = creo->getWeapon();
+		// don't increase visibility if the defender is on a speeder
+		bool isDriving = false;
+		if (creo->isRidingMount()){
+			ManagedReference<CreatureObject*> parent = attacker->getParent().get().castTo<CreatureObject*>();
+			if (parent != NULL)
+				isDriving = parent->isVehicleObject();
+		}
 
-		if (weapon != NULL && weapon->isJediWeapon())
-			VisibilityManager::instance()->increaseVisibility(creo, 25);
+		ManagedReference<WeaponObject*> weapon = creo->getWeapon();
+			
+		if (weapon != NULL && weapon->isJediWeapon() && !isDriving)
+			VisibilityManager::instance()->increaseVisibility(creo, 100);
 	}
 
 	attacker->setDefender(defender);
@@ -226,17 +237,27 @@ int CombatManager::doCombatAction(CreatureObject* attacker, WeaponObject* weapon
 	// Update PvP TEF Duration
 	if (shouldGcwTef || shouldBhTef) {
 		ManagedReference<CreatureObject*> attackingCreature = attacker->isPet() ? attacker->getLinkedCreature() : attacker;
+		CreatureObject* defender = NULL;
+		ManagedReference<CreatureObject*> defendingCreature = NULL;
 
-		if (attackingCreature != NULL) {
-			PlayerObject* ghost = attackingCreature->getPlayerObject();
+		if (defenderObject->isCreatureObject()) {
+			defender = defenderObject->asCreatureObject();
+			defendingCreature = defender->isPet() || defender->isVehicleObject() ? defender->getLinkedCreature() : defender;
+		}
 
-			if (ghost != NULL) {
-				Locker olocker(attackingCreature, attacker);
-				ghost->updateLastPvpCombatActionTimestamp(shouldGcwTef, shouldBhTef);
+		if (attackingCreature != NULL && defendingCreature != NULL) {
+			PlayerObject* attackingGhost = attackingCreature->getPlayerObject();
+			PlayerObject* defendingGhost = defendingCreature->getPlayerObject();
+
+			if (attackingGhost != NULL) {
+				attackingGhost->updateLastPvpCombatActionTimestamp(shouldGcwTef, shouldBhTef);
+			}
+
+			if (defendingGhost != NULL && ServerSettings::instance()->getTefEnabled() && (shouldBhTef)) {
+				defendingGhost->updateLastPvpCombatActionTimestamp(shouldGcwTef, shouldBhTef);
 			}
 		}
 	}
-
 	return damage;
 }
 
@@ -788,6 +809,12 @@ int CombatManager::getDefenderDefenseModifier(CreatureObject* defender, WeaponOb
 	targetDefense += defender->getSkillMod("dodge_attack");
 	targetDefense += defender->getSkillMod("private_dodge_attack");
 
+	if (weapon->getAttackType() == SharedWeaponObjectTemplate::MELEEATTACK) {
+		targetDefense += defender->getSkillMod("melee_defence");
+	} else if (weapon->getAttackType() == SharedWeaponObjectTemplate::RANGEDATTACK) {
+		targetDefense += defender->getSkillMod("ranged_defence");
+	}
+
 	//info("Target defense after state affects and cap is " +  String::valueOf(targetDefense), true);
 
 	return targetDefense;
@@ -826,6 +853,7 @@ float CombatManager::getDefenderToughnessModifier(CreatureObject* defender, int 
 	}
 
 	int jediToughness = defender->getSkillMod("jedi_toughness");
+
 	if (damType != SharedWeaponObjectTemplate::LIGHTSABER && jediToughness > 0)
 		damage *= 1.f - (jediToughness / 100.f);
 
@@ -1396,11 +1424,30 @@ float CombatManager::doDroidDetonation(CreatureObject* droid, CreatureObject* de
 float CombatManager::calculateDamage(CreatureObject* attacker, WeaponObject* weapon, CreatureObject* defender, const CreatureAttackData& data) {
 	float damage = 0;
 	int diff = 0;
+	int frsModMin = 0;
+	int frsModMax = 0;
 
 	if (data.getMinDamage() > 0 || data.getMaxDamage() > 0) { // this is a special attack (force, etc)
+		if (data.isForceAttack()) {
+			int lightPowerMod = attacker->getSkillMod("force_power_light");
+			int darkPowerMod = attacker->getSkillMod("force_power_dark");
+
+			if (lightPowerMod > 0) {
+				if (data.getFrsLightMinDmgMultiplier() != 0)
+					frsModMin += (int)((lightPowerMod * data.getFrsLightMinDmgMultiplier()) + 0.5);
+				if (data.getFrsLightMaxDmgMultiplier() != 0)
+					frsModMax += (int)((lightPowerMod * data.getFrsLightMaxDmgMultiplier()) + 0.5);
+			} else if (darkPowerMod > 0) {
+				if (data.getFrsDarkMinDmgMultiplier() != 0)
+					frsModMin += (int)((darkPowerMod * data.getFrsDarkMinDmgMultiplier()) + 0.5);
+				if (data.getFrsDarkMaxDmgMultiplier() != 0)
+					frsModMax += (int)((darkPowerMod * data.getFrsDarkMaxDmgMultiplier()) + 0.5);
+			}
+		}
+
 		float mod = attacker->isAiAgent() ? cast<AiAgent*>(attacker)->getSpecialDamageMult() : 1.f;
-		damage = data.getMinDamage() * mod;
-		diff = (data.getMaxDamage() * mod) - damage;
+		damage = (data.getMinDamage() + frsModMin) * mod;
+		diff = ((data.getMaxDamage() + frsModMax) * mod) - damage;
 
 	} else {
 		diff = calculateDamageRange(attacker, defender, weapon);
@@ -2751,15 +2798,26 @@ void CombatManager::checkForTefs(CreatureObject* attacker, CreatureObject* defen
 	if (*shouldGcwTef && *shouldBhTef)
 		return;
 
+	bool tefEnabled = ServerSettings::instance()->getTefEnabled();
+
 	ManagedReference<CreatureObject*> attackingCreature = attacker->isPet() ? attacker->getLinkedCreature() : attacker;
 	ManagedReference<CreatureObject*> targetCreature = defender->isPet() || defender->isVehicleObject() ? defender->getLinkedCreature() : defender;
 
-	if (attackingCreature != NULL && targetCreature != NULL && attackingCreature->isPlayerCreature() && targetCreature->isPlayerCreature() && !areInDuel(attackingCreature, targetCreature)) {
+	if (attackingCreature != NULL && targetCreature != NULL && attackingCreature->isPlayerCreature() && !areInDuel(attackingCreature, targetCreature)) {
 
-		if (!(*shouldGcwTef) && (attackingCreature->getFaction() != targetCreature->getFaction()) && (attackingCreature->getFactionStatus() == FactionStatus::OVERT) && (targetCreature->getFactionStatus() == FactionStatus::OVERT))
-			*shouldGcwTef = true;
+		if (tefEnabled) {
+			if (!(*shouldBhTef) && targetCreature->isPlayerCreature() && (attackingCreature->hasBountyMissionFor(targetCreature) || targetCreature->hasBountyMissionFor(attackingCreature)))
+				*shouldBhTef = true;
 
-		if (!(*shouldBhTef) && (attackingCreature->hasBountyMissionFor(targetCreature) || targetCreature->hasBountyMissionFor(attackingCreature)))
-			*shouldBhTef = true;
+			if (!*shouldBhTef) {
+				if (!(*shouldGcwTef) && (attackingCreature->getFaction() != targetCreature->getFaction() && attackingCreature->getFaction() != 0 && (targetCreature->isRebel() || targetCreature->isImperial())))
+					*shouldGcwTef = true;
+			}
+		} else {
+			if (!(*shouldGcwTef) && targetCreature->isPlayerCreature() && (attackingCreature->getFaction() != targetCreature->getFaction()) && (attackingCreature->getFactionStatus() == FactionStatus::OVERT) && (targetCreature->getFactionStatus() == FactionStatus::OVERT))
+				*shouldGcwTef = true;
+			if (!(*shouldBhTef) && targetCreature->isPlayerCreature() && (attackingCreature->hasBountyMissionFor(targetCreature) || targetCreature->hasBountyMissionFor(attackingCreature)))
+				*shouldBhTef = true;
+		}
 	}
 }

@@ -1088,9 +1088,13 @@ void StructureManager::promptPayMaintenance(StructureObject* structure, Creature
 }
 
 void StructureManager::promptWithdrawMaintenance(StructureObject* structure, CreatureObject* creature) {
-	if (!structure->isGuildHall()) {
+	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+
+	if (ghost == NULL)
 		return;
-	}
+
+	if (!structure->isGuildHall() && !structure->isOwnerOf(creature) && !ghost->isPrivileged())
+	 	return;
 
 	if (!structure->isOnAdminList(creature)) {
 		creature->sendSystemMessage("@player_structure:withdraw_admin_only"); // You must be an administrator to remove credits from the treasury.
@@ -1106,11 +1110,6 @@ void StructureManager::promptWithdrawMaintenance(StructureObject* structure, Cre
 		creature->sendSystemMessage("@player_structure:insufficient_funds_withdrawal"); // Insufficent funds for withdrawal.
 		return;
 	}
-
-	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
-
-	if (ghost == NULL)
-		return;
 
 	ManagedReference<SuiInputBox*> sui = new SuiInputBox(creature, SuiWindowType::STRUCTURE_MANAGE_MAINTENANCE);
 	sui->setCallback(new StructureWithdrawMaintenanceSuiCallback(server));
@@ -1273,6 +1272,7 @@ void StructureManager::withdrawMaintenance(StructureObject* structure, CreatureO
 
 	creature->sendSystemMessage(params);
 
+	Locker clocker(creature);
 	creature->addCashCredits(amount);
 	structure->subtractMaintenance(amount);
 }

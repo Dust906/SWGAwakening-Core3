@@ -16,6 +16,8 @@
 #include "server/zone/Zone.h"
 #include "server/zone/objects/region/CityRegion.h"
 
+#include "server/zone/managers/jedi/JediManager.h"
+
 const char LuaPlayerObject::className[] = "LuaPlayerObject";
 
 Luna<LuaPlayerObject>::RegType LuaPlayerObject::Register[] = {
@@ -78,6 +80,13 @@ Luna<LuaPlayerObject>::RegType LuaPlayerObject::Register[] = {
 		{ "setFrsRank", &LuaPlayerObject::setFrsRank },
 		{ "getFrsRank", &LuaPlayerObject::getFrsRank },
 		{ "getFrsCouncil", &LuaPlayerObject::getFrsCouncil },
+
+		{ "getJediUnlockVariable", &LuaPlayerObject::getJediUnlockVariable},
+		{ "setIsGlowing", &LuaPlayerObject::setIsGlowing},
+		{ "isPreVillageJedi", &LuaPlayerObject::isPreVillageJedi},
+		{ "sendUnlockMessage", &LuaPlayerObject::sendUnlockMessage},
+		{ "checkForceStatus", &LuaPlayerObject::checkForceStatus},
+
 		{ 0, 0 }
 };
 
@@ -674,8 +683,9 @@ int LuaPlayerObject::setFrsRank(lua_State* L) {
 
 	if (frsManager != NULL && player != NULL) {
 		Locker locker(frsManager);
+		Locker plocker(player);
 
-		frsManager->setPlayerRank(player, rank);
+		frsManager->setPlayerRank(player, rank, true);
 	}
 
 	return 0;
@@ -695,4 +705,40 @@ int LuaPlayerObject::getFrsCouncil(lua_State* L) {
 	lua_pushinteger(L, frsData->getCouncilType());
 
 	return 1;
+}
+
+int LuaPlayerObject::getJediUnlockVariable(lua_State* L) {
+	int value = lua_tointeger(L, -1);
+	lua_pushinteger(L, realObject->getJediUnlockVariable(value));
+
+	return 1;
+}
+
+int LuaPlayerObject::setIsGlowing(lua_State* L) {
+	realObject->setIsGlowing();
+
+	return 0;
+}
+
+int LuaPlayerObject::isPreVillageJedi(lua_State* L) {
+	bool retVal = realObject->isPreVillageJedi();
+
+	lua_pushboolean(L, retVal);
+
+	return 1;
+}
+
+int LuaPlayerObject::sendUnlockMessage(lua_State* L) {
+	realObject->sendJediUnlockMessage();
+
+	return 0;
+}
+
+int LuaPlayerObject::checkForceStatus(lua_State* L) {
+	ManagedReference<CreatureObject*> player = realObject->getParentRecursively(SceneObjectType::PLAYERCREATURE).castTo<CreatureObject*>();
+
+	if (player != nullptr)
+		JediManager::instance()->checkForceStatusCommand(player);
+
+	return 0;
 }

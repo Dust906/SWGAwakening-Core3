@@ -181,6 +181,24 @@
 #include "server/zone/objects/creature/commands/InspacerrCommand.h"
 #include "server/zone/objects/creature/commands/RequestSpaceTrainerCommand.h"
 
+#include "server/zone/objects/creature/commands/RemovePvpStatesCommand.h"
+#include "server/zone/objects/creature/commands/ShowPlayerStatsCommand.h"
+#include "server/zone/objects/creature/commands/ShowPvpStatsCommand.h"
+
+#include "server/zone/objects/creature/commands/NpcForceLightningSingle1Command.h"
+#include "server/zone/objects/creature/commands/NpcForceLightningSingle2Command.h"
+#include "server/zone/objects/creature/commands/NpcMindBlast1Command.h"
+#include "server/zone/objects/creature/commands/NpcMindBlast2Command.h"
+#include "server/zone/objects/creature/commands/NpcForceChokeCommand.h"
+#include "server/zone/objects/creature/commands/NpcForceWeaken1Command.h"
+#include "server/zone/objects/creature/commands/NpcForceWeaken2Command.h"
+#include "server/zone/objects/creature/commands/NpcForceThrow1Command.h"
+#include "server/zone/objects/creature/commands/NpcForceThrow2Command.h"
+#include "server/zone/objects/creature/commands/NpcForceKnockdown1Command.h"
+#include "server/zone/objects/creature/commands/NpcForceKnockdown2Command.h"
+#include "server/zone/objects/creature/commands/NpcForceLightningCone1Command.h"
+#include "server/zone/objects/creature/commands/NpcForceLightningCone2Command.h"
+
 
 using namespace server::zone::managers::objectcontroller::command;
 
@@ -325,4 +343,25 @@ void CommandConfigManager::registerCommands4() {
 	commandFactory.registerCommand<InspacereloadCommand>(String("inspacereload").toLowerCase());
 	commandFactory.registerCommand<InspacerrCommand>(String("inspacerr").toLowerCase());
 	commandFactory.registerCommand<RequestSpaceTrainerCommand>(String("requestSpaceTrainer").toLowerCase());
+
+
+	// SWG Awakening Custom:  Admin Commands
+	commandFactory.registerCommand<RemovePvpStatesCommand>(String("removePvpStates").toLowerCase());
+	commandFactory.registerCommand<ShowPlayerStatsCommand>(String("showPlayerStats").toLowerCase());
+	commandFactory.registerCommand<ShowPvpStatsCommand>(String("showPvpStats").toLowerCase());
+
+	// SWG Awakening Custom:  NPC/Creature Commands
+	commandFactory.registerCommand<NpcForceLightningSingle1Command>(String("npcForceLightningSingle1").toLowerCase());
+	commandFactory.registerCommand<NpcForceLightningSingle2Command>(String("npcForceLightningSingle2").toLowerCase());
+	commandFactory.registerCommand<NpcMindBlast1Command>(String("npcMindBlast1").toLowerCase());
+	commandFactory.registerCommand<NpcMindBlast2Command>(String("npcMindBlast2").toLowerCase());
+	commandFactory.registerCommand<NpcForceChokeCommand>(String("npcForceChoke").toLowerCase());
+	commandFactory.registerCommand<NpcForceWeaken1Command>(String("npcForceWeaken1").toLowerCase());
+	commandFactory.registerCommand<NpcForceWeaken2Command>(String("npcForceWeaken2").toLowerCase());
+	commandFactory.registerCommand<NpcForceThrow1Command>(String("npcForceThrow1").toLowerCase());
+	commandFactory.registerCommand<NpcForceThrow2Command>(String("npcForceThrow2").toLowerCase());
+	commandFactory.registerCommand<NpcForceKnockdown1Command>(String("npcForceKnockdown1").toLowerCase());
+	commandFactory.registerCommand<NpcForceKnockdown2Command>(String("npcForceKnockdown2").toLowerCase());
+	commandFactory.registerCommand<NpcForceLightningCone1Command>(String("npcForceLightningCone1").toLowerCase());
+	commandFactory.registerCommand<NpcForceLightningCone2Command>(String("npcForceLightningCone2").toLowerCase());
 }

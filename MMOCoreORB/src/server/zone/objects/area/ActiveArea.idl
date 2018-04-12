@@ -24,6 +24,8 @@ class ActiveArea extends SceneObject {
 
 	protected AreaShape areaShape;
 
+	protected unsigned int areaFaction;
+
 	@dereferenced
 	protected transient Vector<SceneObject> attachedScenery;
 
@@ -40,6 +42,8 @@ class ActiveArea extends SceneObject {
 		noSpawnArea = false;
 
 		areaShape = null;
+
+		areaFaction = 0;
 
 		Logger.setLoggingName("ActiveArea");
 	}
@@ -200,4 +204,17 @@ class ActiveArea extends SceneObject {
 	}
 
 	public native void initializeChildObject(SceneObject controllerObject);
+
+	@dirty
+	public abstract boolean isFactionalArea() {
+		return false;
+	}
+	@preLocked
+	public void setAreaFaction(unsigned int val) {
+		areaFaction = val;
+	}
+	@read
+	public unsigned int getAreaFaction() {
+		return areaFaction;
+	}
 }

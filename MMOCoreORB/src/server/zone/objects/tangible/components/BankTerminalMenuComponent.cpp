@@ -156,6 +156,7 @@ int BankTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, 
 		params.setDI(cash);
 		creature->sendSystemMessage(params);
 
+		Locker clocker(creature);
 		creature->subtractCashCredits(cash);
 		creature->addBankCredits(cash);
 
@@ -169,6 +170,7 @@ int BankTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, 
 		params.setDI(cash);
 		creature->sendSystemMessage(params);
 
+		Locker clocker(creature);
 		creature->subtractBankCredits(cash);
 		creature->addCashCredits(cash);
 

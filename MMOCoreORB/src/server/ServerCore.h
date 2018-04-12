@@ -19,6 +19,7 @@ using namespace server::zone;
 
 namespace conf {
 	class ConfigManager;
+	class ServerSettings;
 }
 
 using namespace conf;
@@ -76,6 +77,8 @@ class ServerCore : public Core, public Logger {
 	static ServerCore* instance;
 
 	bool handleCmds;
+
+	ServerSettings* serverSettings;
 
 public:
 	ServerCore(bool truncateDatabases, SortedVector<String>& args);

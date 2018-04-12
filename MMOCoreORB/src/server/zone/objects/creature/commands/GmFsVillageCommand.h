@@ -26,6 +26,11 @@ public:
 		if (JediManager::instance()->getJediProgressionType() != JediManager::VILLAGEJEDIPROGRESSION)
 			return GENERALERROR;
 
+		PlayerObject* ghost = creature->getPlayerObject();
+
+		if (ghost != nullptr && ghost->getAdminLevel () < 15)
+			return GENERALERROR;
+
 		Lua* lua = DirectorManager::instance()->getLuaInstance();
 
 		Reference<LuaFunction*> luaVillageGmCmd = lua->createFunction("VillageGmSui", "showMainPage", 0);

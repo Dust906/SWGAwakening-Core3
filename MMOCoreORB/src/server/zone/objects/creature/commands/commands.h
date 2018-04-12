@@ -838,8 +838,24 @@
 #include "InspacerrCommand.h"
 #include "RequestSpaceTrainerCommand.h"
 
+// SWG Awakening Custom:  Admin Commands
+#include "RemovePvpStatesCommand.h"
+#include "ShowPlayerStatsCommand.h"
+#include "ShowPvpStatsCommand.h"
 
-
+// SWG Awakening Custom:  NPC/Creature Commands
+#include "NpcForceLightningSingle1Command.h"
+#include "NpcForceLightningSingle2Command.h"
+#include "NpcMindBlast1Command.h"
+#include "NpcMindBlast2Command.h"
+#include "NpcForceChokeCommand.h"
+#include "NpcForceWeaken1Command.h"
+#include "NpcForceWeaken2Command.h"
+#include "NpcForceThrow1Command.h"
+#include "NpcForceThrow2Command.h"
+#include "NpcForceKnockdown1Command.h"
+#include "NpcForceKnockdown2Command.h"
+#include "NpcForceLightningCone1Command.h"
+#include "NpcForceLightningCone2Command.h"
 
 #endif /* COMMANDSNEW_H_ */
-

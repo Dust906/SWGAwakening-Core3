@@ -49,11 +49,17 @@ void ImageDesignSessionImplementation::startImageDesign(CreatureObject* designer
 
 	ManagedReference<SceneObject*> obj = designer->getParentRecursively(SceneObjectType::SALONBUILDING);
 
+	if (obj == NULL) // Check for a theater
+		obj = designer->getParentRecursively(SceneObjectType::THEATERBUILDING);
+
 	if (obj != NULL) // If they are in a salon, enable the tickmark for stat migration.
 		designerTentID = obj->getObjectID();
 
 	if (designerTentID != 0) {
 		obj = targetPlayer->getParentRecursively(SceneObjectType::SALONBUILDING);
+
+		if (obj == NULL) // Check for a theater
+			obj = targetPlayer->getParentRecursively(SceneObjectType::THEATERBUILDING);
 
 		if (obj != NULL)
 			targetTentID = obj->getObjectID();
@@ -259,6 +265,8 @@ int ImageDesignSessionImplementation::doPayment() {
 
 		return 0;
 	}
+
+	Locker crossLocker(designerCreature, targetCreature);
 
 	if (requiredPayment <= targetCreature->getCashCredits()) {
 		targetCreature->subtractCashCredits(requiredPayment);

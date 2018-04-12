@@ -247,6 +247,17 @@ int ForceHealQueueCommand::runCommand(CreatureObject* creature, CreatureObject* 
 		else
 			creature->doCombatAnimation(targetCreature, animationCRC, 0, 0xFF);
 
+		int frsLightManipulationMod = creature->getSkillMod("force_manipulation_light");
+		int frsDarkManipulationMod = creature->getSkillMod("force_manipulation_dark");
+
+		if (frsLightManipulationMod > 0) {
+			if (frsLightCostMultiplier != 0)
+				totalCost += (int)((frsLightManipulationMod * frsLightCostMultiplier) + 0.5);
+		} else if (frsDarkManipulationMod > 0) {
+			if (frsDarkCostMultiplier != 0)
+				totalCost += (int)((frsDarkManipulationMod * frsDarkCostMultiplier) + 0.5);
+		}
+
 		if (currentForce < totalCost) {
 			playerObject->setForcePower(0);
 			creature->error("Did not have enough force to pay for the healing he did. Total cost of command: " + String::valueOf(totalCost) + ", player's current force: " + String::valueOf(currentForce));
@@ -255,6 +266,7 @@ int ForceHealQueueCommand::runCommand(CreatureObject* creature, CreatureObject* 
 		}
 
 		VisibilityManager::instance()->increaseVisibility(creature, visMod);
+		checkForTef(creature, targetCreature);
 		return SUCCESS;
 	} else {
 		if (selfHeal) {

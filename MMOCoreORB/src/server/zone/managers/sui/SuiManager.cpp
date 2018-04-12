@@ -27,6 +27,10 @@
 #include "server/zone/objects/tangible/eventperk/ShuttleBeacon.h"
 #include "server/zone/objects/player/sui/SuiBoxPage.h"
 
+#include "conf/ServerSettings.h"
+#include "server/zone/objects/player/sui/eterminalbox/SuiETerminalBox.h"
+#include "server/zone/objects/tangible/terminal/eterminal/ETerminal.h"
+
 SuiManager::SuiManager() : Logger("SuiManager") {
 	server = NULL;
 	setGlobalLogging(true);
@@ -120,6 +124,9 @@ void SuiManager::handleSuiEventNotification(uint32 boxID, CreatureObject* player
 		break;
 	case SuiWindowType::CHARACTER_BUILDER_LIST:
 		handleCharacterBuilderSelectItem(player, suiBox, eventIndex, args);
+		break;
+	case SuiWindowType::E_TERMINAL_LIST:
+		handleETerminalSelectItem(player, suiBox, eventIndex, args);
 		break;
 	case SuiWindowType::OBJECT_NAME:
 		handleSetObjectName(player, suiBox, eventIndex, args);
@@ -353,6 +360,8 @@ void SuiManager::handleCharacterBuilderSelectItem(CreatureObject* player, SuiBox
 
 		String templatePath = node->getTemplatePath();
 
+		Locker pLocker(player);
+
 		if (templatePath.indexOf(".iff") < 0) { // Non-item selections
 
 			if (templatePath == "unlearn_all_skills") {
@@ -485,7 +494,7 @@ void SuiManager::handleCharacterBuilderSelectItem(CreatureObject* player, SuiBox
 				player->sendSystemMessage(stringId);
 
 			} else if (templatePath == "enhance_character") {
-				bluefrog->enhanceCharacter(player);
+				bluefrog->builderEnhanceCharacter(player);
 
 			} else if (templatePath == "credits") {
 				player->addCashCredits(50000, true);
@@ -610,6 +619,135 @@ void SuiManager::handleCharacterBuilderSelectItem(CreatureObject* player, SuiBox
 				item->destroyObjectFromDatabase(true);
 				player->sendSystemMessage("Error putting item in inventory.");
 				return;
+			}
+
+			ghost->addSuiBox(cbSui);
+			player->sendMessage(cbSui->generateMessage());
+		}
+	}
+}
+
+void SuiManager::handleETerminalSelectItem(CreatureObject* player, SuiBox* suiBox, uint32 cancel, Vector<UnicodeString>* args) {
+	ZoneServer* zserv = player->getZoneServer();
+
+	if (args->size() < 1)
+		return;
+
+	bool otherPressed = false;
+	int index = 0;
+
+	if (args->size() > 1) {
+		otherPressed = Bool::valueOf(args->get(0).toString());
+		index = Integer::valueOf(args->get(1).toString());
+	} else {
+		index = Integer::valueOf(args->get(0).toString());
+	}
+
+	if (!suiBox->isETerminalBox())
+		return;
+
+	ManagedReference<SuiETerminalBox*> cbSui = cast<SuiETerminalBox*>( suiBox);
+
+	ETerminalMenuNode* currentNode = cbSui->getCurrentNode();
+
+	PlayerObject* ghost = player->getPlayerObject();
+
+	//If cancel was pressed then we kill the box/menu.
+	if (cancel != 0 || ghost == NULL)
+		return;
+
+	//Back was pressed. Send the node above it.
+	if (otherPressed) {
+		ETerminalMenuNode* parentNode = currentNode->getParentNode();
+
+		if (parentNode == NULL)
+			return;
+
+		cbSui->setCurrentNode(parentNode);
+
+		ghost->addSuiBox(cbSui);
+		player->sendMessage(cbSui->generateMessage());
+		return;
+	}
+
+	ETerminalMenuNode* node = currentNode->getChildNodeAt(index);
+
+	//Node doesn't exist or the index was out of bounds. Should probably resend the menu here.
+	if (node == NULL) {
+		ghost->addSuiBox(cbSui);
+		player->sendMessage(cbSui->generateMessage());
+		return;
+	}
+
+	if (node->hasChildNodes()) {
+		//If it has child nodes, display them.
+		cbSui->setCurrentNode(node);
+		ghost->addSuiBox(cbSui);
+		player->sendMessage(cbSui->generateMessage());
+	} else {
+		ManagedReference<SceneObject*> scob = cbSui->getUsingObject();
+
+		if (scob == NULL)
+			return;
+
+		ETerminal* eTerminal = scob.castTo<ETerminal*>();
+
+		if (eTerminal == NULL)
+			return;
+
+		String templatePath = node->getTemplatePath();
+		int buffCost = ServerSettings::instance()->getBuffCost();
+		int cleanseCost = ServerSettings::instance()->getCleanseCost();
+		int removeCost = ServerSettings::instance()->getRemoveCost();
+
+		if (templatePath.indexOf(".iff") < 0) {
+
+			if (templatePath == "cleanse_character") {
+				StringBuffer insufficientMsg;
+				insufficientMsg << "You do not have enough credits. You need " << cleanseCost << " credits to cleanse yourself.";
+
+				if (player->isInCombat()) {
+					player->sendSystemMessage("You can not use cleanse while in combat.");
+					return;
+				} else if (player->getCashCredits() < cleanseCost && player->getBankCredits() < cleanseCost) {
+					player->sendSystemMessage(insufficientMsg.toString());
+					return;
+				} else if (player->getCashCredits() >= cleanseCost) {
+					player->subtractCashCredits(cleanseCost);
+				} else {
+					player->subtractBankCredits(cleanseCost);
+				}
+
+				player->sendSystemMessage("You have been cleansed from the signs of previous battles.");
+
+				for (int i = 0; i < 9; ++i) {
+					player->setWounds(i, 0);
+				}
+
+				player->setShockWounds(0);
+
+			} else if (templatePath == "reset_buffs") {
+				StringBuffer insufficientMsg;
+				insufficientMsg << "You do not have enough credits. You need " << removeCost << " credits to remove buffs.";
+
+				if (player->isInCombat()) {
+					player->sendSystemMessage("You can not remove your buffs while in combat.");
+					return;
+				} else if (player->getCashCredits() < removeCost && player->getBankCredits() < removeCost) {
+					player->sendSystemMessage(insufficientMsg.toString());
+					return;
+				} else if (player->getCashCredits() >= removeCost) {
+					player->subtractCashCredits(removeCost);
+				} else {
+					player->subtractBankCredits(removeCost);
+				}
+				player->sendSystemMessage("Your buffs have been reset.");
+				player->clearBuffs(true, false);
+				ghost->setFoodFilling(0);
+				ghost->setDrinkFilling(0);
+
+			} else if (templatePath == "enhance_character") {
+				eTerminal->terminalEnhanceCharacter(player);
 			}
 
 			ghost->addSuiBox(cbSui);

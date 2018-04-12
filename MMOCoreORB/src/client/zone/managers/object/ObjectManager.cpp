@@ -29,7 +29,11 @@ ObjectManager::ObjectManager() : Mutex("ObjectManager"), Logger("ObjectManager")
 
 		info("loading object templates...");
 		registerFunctions();
-		luaInstance->runFile("scripts/object/clientmain.lua");
+
+		bool res = luaInstance->runFile("custom_scripts/object/clientmain.lua");
+
+		if (!res)
+			luaInstance->runFile("scripts/object/clientmain.lua");
 
 		registerObjectTypes();
 	}
@@ -217,7 +221,10 @@ void ObjectManager::registerFunctions() {
 int ObjectManager::includeFile(lua_State* L) {
 	String filename = Lua::getStringParameter(L);
 
-	Lua::runFile("scripts/object/" + filename, L);
+	bool res = Lua::runFile("custom_scripts/object/" + filename, L);
+
+	if (!res)
+		Lua::runFile("scripts/object/" + filename, L);
 
 	return 0;
 }

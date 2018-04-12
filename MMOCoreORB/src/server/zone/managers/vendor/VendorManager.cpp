@@ -37,7 +37,10 @@ void VendorManager::loadLuaVendors() {
 	Lua* lua = new Lua();
 	lua->init();
 
-	lua->runFile("scripts/managers/vendor_manager.lua");
+	bool res = lua->runFile("custom_scripts/managers/vendor_manager.lua");
+
+	if (!res)
+		res = lua->runFile("scripts/managers/vendor_manager.lua");
 
 	LuaObject menu = lua->getGlobalObject("VendorMenu");
 

@@ -129,6 +129,7 @@ void ZoneServerImplementation::initialize() {
 
 	objectManager = ObjectManager::instance();
 	objectManager->setZoneProcessor(processor);
+	//objectManager->rebuildSceneObjectsDb(); //Uncomment to rebuild sceneobjects.db.
 	objectManager->updateObjectVersion();
 
 	stringIdManager = StringIdManager::instance();
@@ -771,7 +772,12 @@ void ZoneServerImplementation::loadLoginMessage() {
 	FileReader* reader;
 
 	try {
-		file = new File("conf/motd.txt");
+		file = new File("custom_scripts/conf/motd.txt");
+		FileInputStream fileStream(file);
+
+		if (!file->exists())
+			file = new File("conf/motd.txt");
+
 		reader = new FileReader(file);
 
 		String line;
@@ -784,9 +790,6 @@ void ZoneServerImplementation::loadLoginMessage() {
 		file = NULL;
 		reader = NULL;
 	}
-
-	loginMessage += "\nLatest Commits:\n";
-	loginMessage += ConfigManager::instance()->getRevision();
 
 	delete reader;
 	delete file;
@@ -801,7 +804,12 @@ void ZoneServerImplementation::changeLoginMessage(const String& motd) {
 	String finalMOTD = "";
 
 	try {
-		file = new File("conf/motd.txt");
+		file = new File("custom_scripts/conf/motd.txt");
+		FileInputStream fileStream(file);
+
+		if (!file->exists())
+			file = new File("conf/motd.txt");
+
 		writer = new FileWriter(file);
 
 		for(int i = 0; i < motd.length(); i++) {

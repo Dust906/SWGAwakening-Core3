@@ -45,6 +45,19 @@ public:
 		player->subtractBankCredits(amount + surcharge);
 		targetPlayer->addBankCredits(amount, false); // FIXME: param notifyClient does nothing atm. in CreatureObject.idl:637
 
+		PlayerManager* playerManager = server->getPlayerManager();
+		if (playerManager != NULL && amount >= 5000000) {
+			StringBuffer logEntry;
+			logEntry << player->getFirstName() << " bank tipped " << amount << " credits to " << targetPlayer->getFirstName();
+			playerManager->logPlayerAction("playerTradeLog", logEntry.toString());
+		}
+		PlayerObject* ghost = player->getPlayerObject();
+		if (ghost != NULL && ghost->hasGodMode()) {
+			StringBuffer logEntry;
+			logEntry << player->getFirstName() << " bank tipped " << amount << " credits to " << targetPlayer->getFirstName();
+			playerManager->logPlayerAction("adminTradeLog", logEntry.toString());
+		}
+
 		// Duly notify parties involved
 		if (targetPlayer->isOnline()) {
 			StringIdChatParameter pwpt("base_player", "prose_wire_pass_target"); // You have successfully received %DI bank credits from %TO.

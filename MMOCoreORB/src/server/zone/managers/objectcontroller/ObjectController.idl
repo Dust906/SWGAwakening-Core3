@@ -16,30 +16,30 @@ import server.zone.objects.creature.CreatureObject;
 @dirty
 class ObjectController extends ManagedService implements Logger {
 	private transient ZoneProcessServer server;
-	
+
 	private transient CommandConfigManager configManager;
 	private transient CommandList queueCommands;
-	
+
 	@dereferenced
-	private transient Logger adminLog;
-	
+	private transient Logger adminCommandLog;
+
 	public ObjectController(ZoneProcessServer srv) {
 		server = srv;
-		
+
 		Logger.setLoggingName("ObjectController");
-		
+
 		Logger.setLogging(true);
 		Logger.setGlobalLogging(true);
-		
+
 		loadCommands();
 	}
-	
+
 	public native void finalize();
-	
+
 	public native void loadCommands();
-	
+
 	public native boolean transferObject(SceneObject objectToTransfer, SceneObject destinationObject, int containmentType, boolean notifyClient = false, boolean allowOverflow = false);
-	
+
 	/**
 	 * Activates a queue command from a creature object
 	 * @param object creature object that the command will be run on

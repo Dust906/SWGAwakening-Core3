@@ -67,7 +67,7 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 		menuResponse->addRadialMenuItemToRadialID(118, 124, 3, "@player_structure:management_status"); //Status
 		menuResponse->addRadialMenuItemToRadialID(118, 129, 3, "@player_structure:management_pay"); //Pay Maintenance
 
-		if (structureObject->isGuildHall()) {
+		if (structureObject->isGuildHall() || structureObject->isOwnerOf(creature) || ghost->isPrivileged()) {
 			menuResponse->addRadialMenuItemToRadialID(118, 70, 3, "@player_structure:take_maintenance"); // Withdraw Maintenance
 		}
 

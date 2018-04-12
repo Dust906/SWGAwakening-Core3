@@ -272,7 +272,6 @@ void DroidMaintenanceModuleDataComponent::payStructures(CreatureObject* player, 
 			ManagedReference<SceneObject*> obj = player->getZoneServer()->getObject(objectID);
 			StructureObject* structureObject = cast<StructureObject*>(obj.get());
 			if (structureObject != NULL) {
-				Locker locker(obj);
 				ManagedReference<CreditObject*> creditObject = player->getCreditObject();
 				Locker cross(creditObject, obj);
 

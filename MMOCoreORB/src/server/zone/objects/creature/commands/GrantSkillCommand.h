@@ -8,6 +8,9 @@
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/managers/skill/SkillManager.h"
 
+#include "server/zone/managers/frs/FrsManager.h"
+#include "templates/faction/Factions.h"
+
 class GrantSkillCommand : public QueueCommand {
 public:
 
@@ -33,7 +36,7 @@ public:
 		Locker clocker(targetCreature, creature);
 
 		SkillManager* skillManager = SkillManager::instance();
-		skillManager->surrenderSkill(arguments.toString(), targetCreature, true);
+		skillManager->surrenderSkill(arguments.toString(), targetCreature, true, false);
 		bool skillGranted = skillManager->awardSkill(arguments.toString(), targetCreature, true, true, true);
 
 		if (skillGranted) {
@@ -45,6 +48,28 @@ public:
 
 			creature->sendSystemMessage("Granted skill " + arguments.toString()
 					+ "to " + targetCreature->getFirstName());
+
+			PlayerObject* targetGhost = targetCreature->getPlayerObject();
+
+			if (targetGhost != nullptr) {
+				if (arguments.toString() == "force_title_jedi_rank_03") {
+					ManagedReference<FrsManager*> frsManager = creature->getZoneServer()->getFrsManager();
+					FrsData* frsData = targetGhost->getFrsData();
+
+					if (frsManager == nullptr)
+						return false;
+
+					if (creature->getFaction() == Factions::FACTIONREBEL)
+						frsData->setCouncilType(1);
+					else if (creature->getFaction() == Factions::FACTIONIMPERIAL)
+						frsData->setCouncilType(2);
+					else
+						return false;
+
+					Locker locker(frsManager);
+					frsManager->setPlayerRank(creature, 0, true);
+				}
+			}
 		} else {
 			StringIdChatParameter params;
 			params.setTO(arguments.toString());
