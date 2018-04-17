@@ -91,6 +91,8 @@ class PlayerManager extends Observer implements Logger {
 	private transient Logger banLog;
 	@dereferenced
 	private transient Logger frsKillLog;
+	@dereferenced
+	private transient Logger lootLog;
 
 	@dereferenced
 	private SortedVector<int> veteranRewardMilestones;

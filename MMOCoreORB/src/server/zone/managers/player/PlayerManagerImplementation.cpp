@@ -195,6 +195,12 @@ PlayerManagerImplementation::PlayerManagerImplementation(ZoneServer* zoneServer,
 	frsKillLog.setFileLogger(frsKillLogFileName.toString(), true);
 	frsKillLog.setLogging(true);
 
+	lootLog.setLoggingName("Loot");
+	StringBuffer lootLogFileName;
+	lootLogFileName << "log/player/loot.log";
+	lootLog.setFileLogger(lootLogFileName.toString(), true);
+	lootLog.setLogging(true);
+
 	if (ServerCore::truncateDatabases()) {
 		try {
 			String query = "TRUNCATE TABLE characters";
@@ -5763,6 +5769,8 @@ void PlayerManagerImplementation::logPlayerAction(const String& logName, const S
 		banLog.info(message);
 	} else if (logName == "frsKillLog") {
 		frsKillLog.info(message);
+	} else if (logName== "lootLog") {
+		lootLog.info(message);
 	} else {
 		return;
 	}

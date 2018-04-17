@@ -66,6 +66,7 @@ public:
 		}
 
 		ManagedReference<SceneObject*> objectsParent = objectToTransfer->getParent().get();
+		ManagedReference<SceneObject*> rootParent = objectToTransfer->getRootParent();
 
 		if (objectsParent == NULL) {
 			return GENERALERROR;
@@ -94,7 +95,7 @@ public:
 		Zone* zoneObject = objectToTransfer->getZone();
 
 		if (zoneObject != NULL) {
-			ManagedReference<SceneObject*> rootParent = objectToTransfer->getRootParent();
+
 
 			float maxDistance = 12.5;
 
@@ -176,6 +177,7 @@ public:
 
 		ZoneServer* zoneServer = server->getZoneServer();
 		ObjectController* objectController = zoneServer->getObjectController();
+		ManagedReference<PlayerManager*> playerManager = creature->getZoneServer()->getPlayerManager();
 
 		objectToTransfer->initializePosition(creature->getPositionX(), creature->getPositionZ(), creature->getPositionY());
 
@@ -197,7 +199,7 @@ public:
 			if (creature->hasBuff(STRING_HASHCODE("centerofbeing")))
 				creature->removeBuff(STRING_HASHCODE("centerofbeing"));
 
-			ManagedReference<PlayerManager*> playerManager = creature->getZoneServer()->getPlayerManager();
+
 			if (playerManager != NULL) {
 				creature->setLevel(playerManager->calculatePlayerLevel(creature));
 			}
@@ -205,6 +207,9 @@ public:
 
 		if (notifyLooted) {
 			objectToTransfer->notifyObservers(ObserverEventType::ITEMLOOTED, creature, 0);
+			StringBuffer logEntry;
+			logEntry << creature->getFirstName() << " looted " << objectToTransfer->getDisplayedName() << " from " << rootParent->getDisplayedName();
+			playerManager->logPlayerAction("lootLog", logEntry.toString());
 		}
 
 		if (notifyContainerContentsChanged)
