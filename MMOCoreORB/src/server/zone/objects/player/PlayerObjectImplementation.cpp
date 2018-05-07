@@ -367,9 +367,9 @@ void PlayerObjectImplementation::notifySceneReady() {
 
 	// Make sure all players are added to the general and pvp channels
 	ManagedReference<ChatManager*> chatManager = zoneServer->getChatManager();
+	ManagedReference<ChatRoom*> generalRoom = chatManager->getGeneralRoom();
+	ManagedReference<ChatRoom*> pvpRoom = chatManager->getPvpRoom();
 	if (ServerSettings::instance()->getGeneralChatEnabled()) {
-		ManagedReference<ChatRoom*> generalRoom = chatManager->getGeneralRoom();
-		ManagedReference<ChatRoom*> pvpRoom = chatManager->getPvpRoom();
 		if (generalRoom != NULL) {
 			generalRoom->sendTo(creature);
 			chatManager->handleChatEnterRoomById(creature, generalRoom->getRoomID(), -1);
