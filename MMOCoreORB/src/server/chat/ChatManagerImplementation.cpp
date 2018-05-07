@@ -330,6 +330,11 @@ void ChatManagerImplementation::initiateRooms() {
 		generalRoom->setCanEnter(true);
 		generalRoom->setAllowSubrooms(true);
 		generalRoom->setTitle("Public chat for the SWG Awakening galaxy. Chat rooms can be created here.");
+
+		pvpRoom = createRoom("PvP Chat", galaxyRoom);
+		pvpRoom->setCanEnter(true);
+		pvpRoom->setAllowSubrooms(false);
+		pvpRoom->setTitle("Keep the smack talk in here.");
 	} else {
 		generalRoom = createRoom("Chat", galaxyRoom);
 		generalRoom->setCanEnter(true);
@@ -795,6 +800,11 @@ void ChatManagerImplementation::handleChatRoomMessage(CreatureObject* sender, co
 	} else if (rebelRoom != NULL && rebelRoom->getRoomID() == roomID) {
 		if (sender->isPlayerCreature()) {
 			playerManager->logPlayerAction("rebelChatLog", chatLogMessage);
+		}
+		channel->broadcastMessageCheckIgnore(msg, name);
+	} else if (pvpRoom != NULL && pvpRoom->getRoomID() == roomID){
+		if (sender->isPlayerCreature()){
+			playerManager->logPlayerAction("pvpChatLog", chatLogMessage);
 		}
 		channel->broadcastMessageCheckIgnore(msg, name);
 	} else {

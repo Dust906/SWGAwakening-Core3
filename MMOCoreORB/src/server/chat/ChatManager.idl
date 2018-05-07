@@ -44,6 +44,7 @@ class ChatManager extends ManagedService implements Logger {
 	ChatRoom generalRoom;
 	ChatRoom imperialRoom;
 	ChatRoom rebelRoom;
+	ChatRoom pvpRoom;
 
 	transient ChatRoomMap roomMap;
 
@@ -463,6 +464,10 @@ class ChatManager extends ManagedService implements Logger {
 
 	public ChatRoom getRebelRoom() {
 		return rebelRoom;
+	}
+
+	public ChatRoom getPvpRoom() {
+		return pvpRoom;
 	}
 
 	@dirty

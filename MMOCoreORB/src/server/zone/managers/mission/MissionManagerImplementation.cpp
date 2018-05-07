@@ -1968,8 +1968,12 @@ bool MissionManagerImplementation::isBountyValidForPlayer(CreatureObject* player
 
 	uint64 accountId = playerGhost->getAccountID();
 
+	int targetGuildId = creature->getGuildID();
+	int hunterGuildId = player->getGuildID();
+	bool sameGuild = (targetGuildId != 0) && (hunterGuildId != 0) && (targetGuildId == hunterGuildId);
+
 	if (!enableSameAccountBountyMissions && (targetGhost->getAccountID() == accountId || targetGhost->getIpAddress() == playerGhost->getIpAddress() ||
-			player->getGuildID() == creature->getGuildID()))
+			sameGuild))
 		return false;
 
 	auto hunters = bounty->getBountyHunters();

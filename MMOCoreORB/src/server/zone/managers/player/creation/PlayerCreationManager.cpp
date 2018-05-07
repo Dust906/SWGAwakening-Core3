@@ -657,6 +657,7 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 
 	if (ServerSettings::instance()->getGeneralChatEnabled()) {
 		ghost->addChatRoom(chatManager->getGeneralRoom()->getRoomID());
+		ghost->addChatRoom(chatManager->getPvpRoom()->getRoomID());
 	}
 
 	ManagedReference<SuiMessageBox*> box = new SuiMessageBox(playerCreature, SuiWindowType::NONE);

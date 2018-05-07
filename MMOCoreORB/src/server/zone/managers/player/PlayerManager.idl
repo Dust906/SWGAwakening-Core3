@@ -88,6 +88,8 @@ class PlayerManager extends Observer implements Logger {
 	@dereferenced
 	private transient Logger rebelChatLog;
 	@dereferenced
+	private transient Logger pvpChatLog;
+	@dereferenced
 	private transient Logger banLog;
 	@dereferenced
 	private transient Logger frsKillLog;

@@ -365,8 +365,22 @@ void PlayerObjectImplementation::notifySceneReady() {
 	if (zoneServer == NULL || zoneServer->isServerLoading())
 		return;
 
-	//Join GuildChat
+	// Make sure all players are added to the general and pvp channels
 	ManagedReference<ChatManager*> chatManager = zoneServer->getChatManager();
+	if (ServerSettings::instance()->getGeneralChatEnabled()) {
+		ManagedReference<ChatRoom*> generalRoom = chatManager->getGeneralRoom();
+		ManagedReference<ChatRoom*> pvpRoom = chatManager->getPvpRoom();
+		if (generalRoom != NULL) {
+			generalRoom->sendTo(creature);
+			chatManager->handleChatEnterRoomById(creature, generalRoom->getRoomID(), -1);
+		}
+		if (pvpRoom != NULL) {
+			pvpRoom->sendTo(creature);
+			chatManager->handleChatEnterRoomById(creature, generalRoom->getRoomID(), -1);
+		}
+	}
+
+	//Join GuildChat
 	ManagedReference<GuildObject*> guild = creature->getGuildObject().get();
 
 	if (guild != NULL) {
@@ -409,8 +423,11 @@ void PlayerObjectImplementation::notifySceneReady() {
 		ChatRoom* room = chatManager->getChatRoom(chatRooms.get(i));
 		if (room != NULL) {
 			int roomType = room->getChatRoomType();
-			if (roomType == ChatRoom::PLANET || roomType == ChatRoom::GUILD)
-				continue; //Planet and Guild are handled above.
+			if (roomType == ChatRoom::PLANET
+					|| roomType == ChatRoom::GUILD
+					|| room->getRoomID() == chatManager->getGeneralRoom()->getRoomID()
+					|| room->getRoomID() == chatManager->getPvpRoom()->getRoomID())
+				continue; //Planet and Guild are handled above, along with General and PvP if enabled
 
 			room->sendTo(creature);
 			chatManager->handleChatEnterRoomById(creature, room->getRoomID(), -1);

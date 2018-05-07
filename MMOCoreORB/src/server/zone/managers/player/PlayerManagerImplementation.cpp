@@ -181,6 +181,13 @@ PlayerManagerImplementation::PlayerManagerImplementation(ZoneServer* zoneServer,
 	rebelChatLog.setFileLogger(rebelChatFileName.toString(), true);
 	rebelChatLog.setLogging(true);
 
+	//PvP Chat Log
+	pvpChatLog.setLoggingName("PvP Chat");
+	StringBuffer pvpChatFileName;
+	pvpChatFileName << "log/chat/pvpchat.log";
+	pvpChatLog.setFileLogger(pvpChatFileName.toString(), true);
+	pvpChatLog.setLogging(true);
+
 	//Ban Log
 	banLog.setLoggingName("Ban");
 	StringBuffer banFileName;
@@ -5765,6 +5772,8 @@ void PlayerManagerImplementation::logPlayerAction(const String& logName, const S
 		imperialChatLog.info(message);
 	} else if (logName == "rebelChatLog") {
 		rebelChatLog.info(message);
+	} else if (logName == "pvpChatLog") {
+		pvpChatLog.info(message);
 	} else if (logName == "banLog") {
 		banLog.info(message);
 	} else if (logName == "frsKillLog") {

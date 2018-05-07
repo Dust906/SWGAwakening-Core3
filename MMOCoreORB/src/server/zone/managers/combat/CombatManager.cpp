@@ -1581,13 +1581,54 @@ int CombatManager::getHitChance(TangibleObject* attacker, CreatureObject* target
 
 		// saber block is special because it's just a % chance to block based on the skillmod
 		if (def == "saber_block") {
-
-			if (!attacker->isTurret()
-					&& (weapon->getAttackType() == SharedWeaponObjectTemplate::RANGEDATTACK)
-					&& ((System::random(100)) < targetCreature->getSkillMod(def)))
-				return RICOCHET;
+			if (!attacker->isTurret() && (weapon->getAttackType() == SharedWeaponObjectTemplate::RANGEDATTACK) && ((System::random(100) < targetCreature->getSkillMod(def))))
+					return RICOCHET;
 			else return HIT;
 		}
+
+
+		/*// Work in progress
+		if (def == "saber_block") {
+			int saberBlockMod = targetCreature->getSkillMod(def);
+			bool isMeleeHunter = creoAttacker->hasSkill("combat_bountyhunter_investigation_04")
+				&& (
+						creoAttacker->hasSkill("combat_unarmed_master")
+						|| creoAttacker->hasSkill("combat_1hsword_master")
+						|| creoAttacker->hasSkill("combat_2hsword_master")
+						|| creoAttacker->hasSkill("combat_polearm_master")
+			);
+
+			if (creoAttacker->hasBountyMissionFor(targetCreature) && (isMeleeHunter || creoAttacker->hasSkill("combat_bountyhunter_master")))
+			{
+				int saberBlockCap = 60;
+				if (saberBlockMod > saberBlockCap)
+				{
+					if (targetCreature->hasSkill("force_discipline_light_saber_master")) saberBlockCap += 5;
+					if (targetCreature->hasSkill("force_rank_dark_novice") || targetCreature->hasSkill("force_rank_light_novice")) saberBlockCap += 5;
+					if (targetCreature->hasSkill("force_rank_dark_rank_01") || targetCreature->hasSkill("force_rank_light_rank_01")) saberBlockCap++;
+					if (targetCreature->hasSkill("force_rank_dark_rank_02") || targetCreature->hasSkill("force_rank_light_rank_02")) saberBlockCap++;
+					if (targetCreature->hasSkill("force_rank_dark_rank_03") || targetCreature->hasSkill("force_rank_light_rank_03")) saberBlockCap++;
+					if (targetCreature->hasSkill("force_rank_dark_rank_04") || targetCreature->hasSkill("force_rank_light_rank_04")) saberBlockCap++;
+					if (targetCreature->hasSkill("force_rank_dark_rank_05") || targetCreature->hasSkill("force_rank_light_rank_05")) saberBlockCap++;
+					if (targetCreature->hasSkill("force_rank_dark_rank_06") || targetCreature->hasSkill("force_rank_light_rank_06")) saberBlockCap++;
+					if (targetCreature->hasSkill("force_rank_dark_rank_07") || targetCreature->hasSkill("force_rank_light_rank_07")) saberBlockCap++;
+					if (targetCreature->hasSkill("force_rank_dark_rank_08") || targetCreature->hasSkill("force_rank_light_rank_08")) saberBlockCap++;
+					if (targetCreature->hasSkill("force_rank_dark_rank_09") || targetCreature->hasSkill("force_rank_light_rank_09")) saberBlockCap++;
+					if (targetCreature->hasSkill("force_rank_dark_rank_10") || targetCreature->hasSkill("force_rank_light_rank_10")) saberBlockCap++;
+					if (targetCreature->hasSkill("force_rank_dark_master") || targetCreature->hasSkill("force_rank_light_master")) saberBlockCap += 5;
+				}
+				saberBlockMod = saberBlockCap;
+			}
+			if (!attacker->isTurret()
+					//&& (weapon->getAttackType() == SharedWeaponObjectTemplate::RANGEDATTACK)
+					&& ((System::random(100)) < saberBlockMod))
+			{
+				if (weapon->getAttackType()== SharedWeaponObjectTemplate::RANGEDATTACK) return RICOCHET;
+				if (weapon->getAttackType() == SharedWeaponObjectTemplate::MELEEATTACK) return BLOCK;
+			}
+			else return HIT;
+		}
+		*/
 
 		targetDefense = getDefenderSecondaryDefenseModifier(targetCreature);
 
