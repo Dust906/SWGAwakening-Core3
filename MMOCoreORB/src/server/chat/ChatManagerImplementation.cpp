@@ -332,6 +332,7 @@ void ChatManagerImplementation::initiateRooms() {
 		generalRoom->setTitle("Public chat for the SWG Awakening galaxy. Chat rooms can be created here.");
 
 		pvpRoom = createRoom("PvP Chat", galaxyRoom);
+		pvpRoom->setFullPath(pvpRoom->getFullPath().replaceFirst("PvP Chat", "PvP"));
 		pvpRoom->setCanEnter(true);
 		pvpRoom->setAllowSubrooms(false);
 		pvpRoom->setTitle("Keep the smack talk in here.");

@@ -127,8 +127,8 @@ public:
 			}
 
 			// MBH able to use adhesive trap without Scout x4xx
-			if (creature->hasSkill("combat_bountyhunter_master"))
-				trappingSkill += 25;
+			if (creature->hasSkill("combat_bountyhunter_master") && trappingSkill < 25)
+				trappingSkill = 25;
 
 			/// Skill too low check
 			if(trappingSkill < trapData->getSkillRequired()) {
@@ -183,6 +183,7 @@ public:
 				buff = new Buff(targetCreature, crc, trapData->getDuration(), BuffType::STATE);
 
 				Locker locker(buff);
+				Locker pLocker(targetCreature);
 
 				if (state != 0) {
 					if (state == CreatureState::FROZEN && (targetCreature->isPlayerCreature() || targetCreature->isPet())){
@@ -190,7 +191,7 @@ public:
 						uint32 forceRun1CRC = BuffCRC::JEDI_FORCE_RUN_1;
 						uint32 forceRun2CRC = BuffCRC::JEDI_FORCE_RUN_2;
 						uint32 forceRun3CRC = BuffCRC::JEDI_FORCE_RUN_3;
-						Locker pLocker(targetCreature);
+
 						if (targetCreature->hasBuff(forceRun1CRC))
 							targetCreature->removeBuff(forceRun1CRC);
 						if (targetCreature->hasBuff(forceRun2CRC))
