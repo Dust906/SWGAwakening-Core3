@@ -921,7 +921,7 @@ bool PlanetManagerImplementation::isInRangeWithPoi(float x, float y, float range
 	return false;
 }
 
-bool PlanetManagerImplementation::isInObjectsNoBuildZone(float x, float y, float extraMargin) {
+bool PlanetManagerImplementation::isInObjectsNoBuildZone(float x, float y, float extraMargin, bool checkFootprint) {
 	SortedVector<QuadTreeEntry*> closeObjects;
 
 	Vector3 targetPos(x, y, zone->getHeight(x, y));
@@ -950,7 +950,7 @@ bool PlanetManagerImplementation::isInObjectsNoBuildZone(float x, float y, float
 
 			// Check if it's within a structure's footprint
 			if (objectTemplate->isSharedStructureObjectTemplate()) {
-				if (StructureManager::instance()->isInStructureFootprint(cast<StructureObject*>(obj), x, y, extraMargin)) {
+				if (checkFootprint && StructureManager::instance()->isInStructureFootprint(cast<StructureObject*>(obj), x, y, extraMargin)) {
 					return true;
 				}
 			}
@@ -998,7 +998,7 @@ bool PlanetManagerImplementation::isSpawningPermittedAt(float x, float y, float 
 	return true;
 }
 
-bool PlanetManagerImplementation::isBuildingPermittedAt(float x, float y, SceneObject* object, float margin) {
+bool PlanetManagerImplementation::isBuildingPermittedAt(float x, float y, SceneObject* object, float margin, bool checkFootprint) {
 	SortedVector<ActiveArea*> activeAreas;
 
 	Vector3 targetPos(x, y, 0);
@@ -1018,7 +1018,7 @@ bool PlanetManagerImplementation::isBuildingPermittedAt(float x, float y, SceneO
 		}
 	}
 
-	if (isInObjectsNoBuildZone(x, y, margin)) {
+	if (isInObjectsNoBuildZone(x, y, margin, checkFootprint)) {
 		return false;
 	}
 

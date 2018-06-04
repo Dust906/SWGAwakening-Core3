@@ -23,7 +23,7 @@ public:
 
 		player->removePendingTask("call_pet");
 
-		if(player->isInCombat())
+		if(player->isInCombat() && !player->hasSkill("outdoors_creaturehandler_novice"))
 			return;
 
 		Locker locker2(device);

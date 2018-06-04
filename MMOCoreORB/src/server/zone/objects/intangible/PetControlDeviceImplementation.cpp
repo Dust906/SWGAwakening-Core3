@@ -215,39 +215,51 @@ void PetControlDeviceImplementation::callObject(CreatureObject* player) {
 		server->getZoneServer()->getPlayerManager()->handleAbortTradeMessage(player);
 	}
 
-	if (player->getCurrentCamp() == NULL && player->getCityRegion() == NULL) {
+	// get the modified delay if this is a creature pet
+	    // default/min delay variables defined for clarity
+	    int defaultDelay = 15;
+	    int minimumDelay = 0;
+	    int petDelaySeconds = petType == PetManager::CREATUREPET ?  getCreaturePetDelay(player, defaultDelay, minimumDelay) : defaultDelay;
 
-		Reference<CallPetTask*> callPet = new CallPetTask(_this.getReferenceUnsafeStaticCast(), player, "call_pet");
+	    // if the player is not in a camp, city, or has a pet delay
+	    if(player->getCurrentCamp() == NULL && player->getCityRegion() == NULL && petDelaySeconds > 0) {
 
-		StringIdChatParameter message("pet/pet_menu", "call_pet_delay"); // Calling pet in %DI seconds. Combat will terminate pet call.
-		message.setDI(15);
-		player->sendSystemMessage(message);
+	        Reference<CallPetTask*> callPet = new CallPetTask(_this.getReferenceUnsafeStaticCast(), player, "call_pet");
 
-		player->addPendingTask("call_pet", callPet, 15 * 1000);
+	        // If the player is a CH send the appropriate mesage.  Otherwise use the default.
+	        if(player->hasSkill("outdoors_creaturehandler_novice")){
+	            player->sendSystemMessage("Calling pet.");
+	        } else{
+	            StringIdChatParameter message("pet/pet_menu", "call_pet_delay"); // Calling pet in %DI seconds. Combat will terminate pet call.
+	            message.setDI(petDelaySeconds);
+	            player->sendSystemMessage(message);
+	        }
 
-		if (petControlObserver == NULL) {
-			petControlObserver = new PetControlObserver(_this.getReferenceUnsafeStaticCast());
-			petControlObserver->deploy();
-		}
+	        player->addPendingTask("call_pet", callPet, petDelaySeconds * 1000);
 
-		player->registerObserver(ObserverEventType::STARTCOMBAT, petControlObserver);
+	        if (petControlObserver == NULL) {
+	            petControlObserver = new PetControlObserver(_this.getReferenceUnsafeStaticCast());
+	            petControlObserver->deploy();
+	        }
 
-	} else { // Player is in a city or camp, spawn pet immediately
+	        player->registerObserver(ObserverEventType::STARTCOMBAT, petControlObserver);
 
-		if( player->getCooldownTimerMap() == NULL )
-			return;
+	    } else { // Player is in a city or camp, spawn pet immediately
 
-		// Check cooldown
-		if( !player->getCooldownTimerMap()->isPast("petCallOrStoreCooldown") ){
-			player->sendSystemMessage("@pet/pet_menu:cant_call_1sec"); //"You cannot CALL for 1 second."
-			return;
-		}
+	        if( player->getCooldownTimerMap() == NULL )
+	            return;
 
-		spawnObject(player);
+	        // Check cooldown
+	        if( !player->getCooldownTimerMap()->isPast("petCallOrStoreCooldown") ){
+	            player->sendSystemMessage("@pet/pet_menu:cant_call_1sec"); //"You cannot CALL for 1 second."
+	            return;
+	        }
 
-		// Set cooldown
-		player->getCooldownTimerMap()->updateToCurrentAndAddMili("petCallOrStoreCooldown", 1000); // 1 sec
-	}
+	        spawnObject(player);
+
+	        // Set cooldown
+	        player->getCooldownTimerMap()->updateToCurrentAndAddMili("petCallOrStoreCooldown", 1000); // 1 sec
+	    }
 
 	EnqueuePetCommand* enqueueCommand = new EnqueuePetCommand(pet, String("petFollow").toLowerCase().hashCode(), String::valueOf(player->getObjectID()), player->getObjectID(), 1);
 	enqueueCommand->execute();
@@ -1257,4 +1269,19 @@ void PetControlDeviceImplementation::setVitality(int vit) {
 			}
 		}, "PetSetVitalityLambda");
 	}
+}
+
+float PetControlDeviceImplementation::getCreaturePetDelay(CreatureObject* player, int defaultDelay, int minimumDelay){
+    // if the player is master CH there is no delay
+    // start with the default and reduce by 20% for each level trained in creature management
+    float reductionPercentage = 0;
+    if (player->hasSkill("outdoors_creaturehandler_support_01")) reductionPercentage += 0.20;
+    if (player->hasSkill("outdoors_creaturehandler_support_02")) reductionPercentage += 0.20;
+    if (player->hasSkill("outdoors_creaturehandler_support_03")) reductionPercentage += 0.20;
+    if (player->hasSkill("outdoors_creaturehandler_support_04")) reductionPercentage += 0.20;
+    if (player->hasSkill("outdoors_creaturehandler_master")) reductionPercentage += 0.20;
+    float modifiedDelay = defaultDelay - (defaultDelay * reductionPercentage);
+
+    // use the minimum delay if it is larger than the modified delay
+    return modifiedDelay < minimumDelay ? minimumDelay : modifiedDelay;
 }

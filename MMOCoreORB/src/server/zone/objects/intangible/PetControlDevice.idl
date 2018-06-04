@@ -113,6 +113,10 @@ class PetControlDevice extends ControlDevice {
 
 	@preLocked
 	public native void trainAsMount(CreatureObject player);
+	
+	@preLocked
+	@arg1preLocked
+	public native float getCreaturePetDelay(CreatureObject player, int defaultDelay = 15, int minimumDelay = 0);
 
 	@read
 	public boolean isTrainedAsMount() {
