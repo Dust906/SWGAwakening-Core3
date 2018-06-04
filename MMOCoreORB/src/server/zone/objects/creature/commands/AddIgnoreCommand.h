@@ -44,7 +44,7 @@ public:
 
 		bool validName = playerManager->existsName(nameLower);
 
-		if (creature->getFirstName() == "Discord" || creature->getFirstName() == "PvP") {
+		if (creature->getFirstName() == "Discord" || creature->getFirstName() == "PvP" || creature->getFirstName() == "ChatRelay") {
 			validName = true;
 		} else {
 			validName = validName && (creature->getFirstName().toLowerCase().compareTo( nameLower ) != 0);
