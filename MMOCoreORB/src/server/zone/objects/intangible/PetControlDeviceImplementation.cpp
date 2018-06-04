@@ -27,7 +27,20 @@
 #include "server/zone/objects/player/FactionStatus.h"
 
 void PetControlDeviceImplementation::callObject(CreatureObject* player) {
-	if (player->isInCombat() || player->isDead() || player->isIncapacitated() || player->getPendingTask("tame_pet") != NULL) {
+	// assume the pet can be called
+	bool canCallPet = true;
+	// make sure the player is a creature handler if in combat
+	if(player->isInCombat()){
+		if(!player->hasSkill("outdoors_creaturehandler_novice")){
+			canCallPet = false;
+		}
+	}
+	// follow normal rules
+	if (player->isDead() || player->isIncapacitated() || player->getPendingTask("tame_pet") != NULL){
+		canCallPet = false;
+	}
+
+	if (!canCallPet) {
 		player->sendSystemMessage("@pet/pet_menu:cant_call"); // You cannot call this pet right now.
 		return;
 	}
