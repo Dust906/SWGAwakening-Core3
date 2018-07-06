@@ -50,7 +50,7 @@ int SurveyToolImplementation::handleObjectMenuSelect(CreatureObject* player, byt
 		if (selectedID == 20) { // use object
 			int range = getRange(player);
 
-			if (range <= 0 || range > 512) {
+			if (range <= 0 || range > 1024) {
 				sendRangeSui(player);
 				return 0;
 			}
@@ -115,6 +115,8 @@ void SurveyToolImplementation::sendRangeSui(CreatureObject* player) {
 		suiToolRangeBox->addMenuItem("448m x 6pts", 6);
 	if (surveyMod >= 115)
 		suiToolRangeBox->addMenuItem("512m x 6pts", 7);
+	if (surveyMod >= 125)
+		suiToolRangeBox->addMenuItem("1024m x 6pts", 8);
 
 	suiToolRangeBox->setUsingObject(_this.getReferenceUnsafeStaticCast());
 	suiToolRangeBox->setCallback(new SurveyToolSetRangeSuiCallback(server->getZoneServer()));
@@ -134,7 +136,9 @@ int SurveyToolImplementation::getRange(CreatureObject* player) {
 }
 
 int SurveyToolImplementation::getSkillBasedRange(int skillLevel) {
-	if (skillLevel >= 115)
+	if (skillLevel >= 125)
+		return 1024;
+	else if (skillLevel >= 115)
 		return 512;
 	else if (skillLevel >= 110)
 		return 448;

@@ -32,7 +32,13 @@ public:
 		if(surveyTool == NULL)
 			return;
 
-		int range = 64 * Integer::valueOf(args->get(0).toString()) + 64;
+		// we aren't going to do a 64m ramp up between 512m and 1024m
+		int optionIndex = Integer::valueOf(args->get(0).toString());
+		int range = 64;
+		if (optionIndex == 8)
+			range = 1024;
+		else
+			range += (optionIndex * 64);
 
 		Locker _lock(surveyTool);
 		surveyTool->setRange(range);
