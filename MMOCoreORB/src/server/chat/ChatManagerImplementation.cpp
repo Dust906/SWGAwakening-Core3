@@ -1649,7 +1649,7 @@ void ChatManagerImplementation::handleGuildChat(CreatureObject* sender, const Un
 	ManagedReference<ChatRoom*> room = guild->getChatRoom();
 	if (room != NULL) {
 		BaseMessage* msg = new ChatRoomMessage(name, server->getGalaxyName(), formattedMessage, room->getRoomID());
-		room->broadcastMessage(msg);
+		room->broadcastMessageCheckIgnore(msg, name);
 	}
 
 }
