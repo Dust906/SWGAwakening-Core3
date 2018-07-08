@@ -127,8 +127,8 @@ public:
 			}
 
 			// MBH able to use adhesive trap without Scout x4xx
-			if (creature->hasSkill("combat_bountyhunter_master") && trappingSkill < 25)
-				trappingSkill = 25;
+			if (creature->hasSkill("combat_bountyhunter_master") && trappingSkill < 30)
+				trappingSkill = 30;
 
 			/// Skill too low check
 			if(trappingSkill < trapData->getSkillRequired()) {
