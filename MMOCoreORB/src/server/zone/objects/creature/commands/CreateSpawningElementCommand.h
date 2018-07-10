@@ -162,40 +162,42 @@ public:
 				creature->sendSystemMessage("oid: " + String::valueOf(objectID));
 
 			} else if (action.toLowerCase() == "delete") {
+				if (player->hasSkill("admin_server_admin_02")) {
+					String chatObjectID;
+					args.getStringToken(chatObjectID);
+					uint64 oid = UnsignedLong::valueOf(chatObjectID);
 
-				String chatObjectID;
-				args.getStringToken(chatObjectID);
-				uint64 oid = UnsignedLong::valueOf(chatObjectID);
+					ManagedReference<SceneObject*> object = zserv->getObject(oid);
 
-				ManagedReference<SceneObject*> object = zserv->getObject(oid);
-
-				if (object == NULL) {
-					creature->sendSystemMessage("Error: Trying to delete invalid oid.");
-					return GENERALERROR;
-				}
-
-				for (int i = 0; i < object->getArrangementDescriptorSize(); ++i) {
-					const Vector<String>* descriptors = object->getArrangementDescriptor(i);
-
-					for (int j = 0; j < descriptors->size(); ++j) {
-						const String& descriptor = descriptors->get(j);
-
-						if (descriptor == "inventory" || descriptor == "datapad" || descriptor == "default_weapon"
-							|| descriptor == "mission_bag" || descriptor == "ghost" || descriptor == "bank" || descriptor == "hair")
+					if (object == NULL) {
+						creature->sendSystemMessage("Error: Trying to delete invalid oid.");
 						return GENERALERROR;
 					}
+
+					for (int i = 0; i < object->getArrangementDescriptorSize(); ++i) {
+						const Vector<String>* descriptors = object->getArrangementDescriptor(i);
+
+						for (int j = 0; j < descriptors->size(); ++j) {
+							const String& descriptor = descriptors->get(j);
+
+							if (descriptor == "inventory" || descriptor == "datapad" || descriptor == "default_weapon"
+								|| descriptor == "mission_bag" || descriptor == "ghost" || descriptor == "bank" || descriptor == "hair")
+							return GENERALERROR;
+						}
+					}
+
+					Locker clocker(object, creature);
+
+					object->destroyObjectFromWorld(true);
+
+					if (object->isPersistent()) {
+						object->destroyObjectFromDatabase(true);
+					}
+
+					creature->sendSystemMessage("Object " + chatObjectID + " deleted.");
+				} else {
+					creature->sendSystemMessage("Objects can only be deleted by admin level staff members");
 				}
-
-				Locker clocker(object, creature);
-
-				object->destroyObjectFromWorld(true);
-
-				if (object->isPersistent()) {
-					object->destroyObjectFromDatabase(true);
-				}
-
-				creature->sendSystemMessage("Object " + chatObjectID + " deleted.");
-
 			}
 		} catch (Exception& e) {
 			creature->sendSystemMessage("Spawn: /createSpawningElement spawn IffObjectPath [x z y heading]");
