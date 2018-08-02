@@ -136,6 +136,8 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ "getDamageDealerList", &LuaCreatureObject::getDamageDealerList },
 		{ "getHealingThreatList", &LuaCreatureObject::getHealingThreatList},
 		{ "getSkillMod", &LuaCreatureObject::getSkillMod},
+		{ "clearBuffs", &LuaCreatureObject::clearBuffs},
+		{ "terminalEnhanceCharacter", &LuaCreatureObject::terminalEnhanceCharacter},
 		{ 0, 0 }
 };
 
@@ -970,6 +972,19 @@ int LuaCreatureObject::setShockWounds(lua_State* L) {
 
 	realObject->setShockWounds(amount, true);
 
+	return 0;
+}
+
+int LuaCreatureObject::clearBuffs(lua_State* L) {
+	realObject->clearBuffs(true, true);
+	realObject->getPlayerObject()->setFoodFilling(0);
+	realObject->getPlayerObject()->setDrinkFilling(0);
+	return 0;
+}
+
+int LuaCreatureObject::terminalEnhanceCharacter(lua_State* L) {
+	PlayerManager* playerManager = realObject->getZoneServer()->getPlayerManager();
+	playerManager->terminalEnhanceCharacter(realObject);
 	return 0;
 }
 
