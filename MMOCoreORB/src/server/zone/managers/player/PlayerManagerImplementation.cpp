@@ -884,6 +884,7 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 			if (!CombatManager::instance()->areInDuel(attackerCreature, player)) {
 				//AWard Faction Points
 				FactionManager::instance()->awardPvpFactionPoints(attackerCreature, player);
+				logPvpKill(attackerCreature, player);
 
 				if (attackerGhost != NULL)
 					updatePvPKillCount(attackerCreature);
@@ -1299,7 +1300,7 @@ void PlayerManagerImplementation::ejectPlayerFromBuilding(CreatureObject* player
 }
 
 void PlayerManagerImplementation::disseminateExperience(TangibleObject* destructedObject, ThreatMap* threatMap,
-		SynchronizedVector<ManagedReference<CreatureObject*> >* spawnedCreatures,Zone* lairZone) {
+	SynchronizedVector<ManagedReference<CreatureObject*> >* spawnedCreatures,Zone* lairZone) {
 	uint32 totalDamage = threatMap->getTotalDamage();
 
 	if (totalDamage == 0) {
@@ -1441,14 +1442,35 @@ void PlayerManagerImplementation::disseminateExperience(TangibleObject* destruct
 				if (winningFaction == attacker->getFaction())
 					xpAmount *= gcwBonus;
 
+				//We need to check for FRS eligibility
+				bool grantFRS = false;
+				bool targetIsOpposingFaction = (destructedObject->isRebel() && attacker->isImperial()) || (destructedObject->isImperial() && attacker->isRebel());
+				float frsAmount = 0;
+				int minLevelFactional = 100;
+				int minLevelNonFactional = 150;
+				int targetLevel = destructedObject->getLevel();
 				//Jedi experience doesn't count towards combat experience, and is earned at 20% the rate of normal experience
-				if (xpType != "jedi_general")
+				if (xpType != "jedi_general") {
 					combatXp += xpAmount;
-				else
-					xpAmount *= 0.18f;
+				} else {
+					xpAmount *= 0.20f;
+					if (attacker->hasSkill("force_rank_light_novice") || attacker->hasSkill("force_rank_dark_novice")) {
+						// award if the target had a level of 150 or greater, level 100 or greater if opposing faction
+						if (targetLevel >= minLevelNonFactional) {
+							grantFRS = true;
+						} else if (targetIsOpposingFaction && targetLevel >= minLevelFactional) {
+							grantFRS = true;
+						}
+					}
+					frsAmount = xpAmount * 0.01f;
+				}
 
 				//Award individual expType
 				awardExperience(attacker, xpType, xpAmount);
+				//Award FRS
+				if (grantFRS) {
+					awardExperience(attacker, "force_rank_xp", frsAmount);
+				}
 			}
 
 			combatXp = awardExperience(attacker, "combat_general", combatXp, true, 0.1f);
@@ -5819,6 +5841,37 @@ void PlayerManagerImplementation::updatePvPKillCount(CreatureObject* player) {
 			awardBadge(ghost, 156);
 		}
 	}
+}
+
+void PlayerManagerImplementation::logPvpKill(CreatureObject* victor, CreatureObject* victim) {
+	String victorFactionString = "Neutral";
+	String victimFactionString = "Neutral";
+	String victorFactionStatusString = "Covert";
+	String victimFactionStatusString = "Covert";
+
+	if (victor->getFaction() == Factions::FACTIONIMPERIAL) victorFactionString = "Imperial";
+	if (victor->getFaction() == Factions::FACTIONREBEL) victorFactionString = "Rebel";
+	if (victim->getFaction() == Factions::FACTIONIMPERIAL) victimFactionString = "Imperial";
+	if (victim->getFaction() == Factions::FACTIONREBEL) victimFactionString = "Rebel";
+	if (victor->getFactionStatus() == FactionStatus::OVERT) victorFactionStatusString = "Overt";
+	if (victim->getFactionStatus() == FactionStatus::OVERT) victimFactionStatusString = "Overt";
+
+	StringBuffer query;
+	query
+		<< "INSERT INTO `pvp_kills` (`victor_character_oid`, `victim_character_oid`, `victor_faction`, `victim_faction`, `victor_faction_status`, `victim_faction_status`) "
+		<< "VALUES ("
+		<< victor->getObjectID()
+		<< "," << victim->getObjectID()
+		<< ",'" << victorFactionString
+		<< "','" << victimFactionString
+		<< "','" << victorFactionStatusString
+		<< "','" << victimFactionStatusString
+		<< "')";
+	ServerDatabase::instance()->executeStatement(query);
+
+	//ChatManager* chatManager = server->getChatManager();
+	//chatManager->broadcastMessage(player->getDisplayedName() + " has defeated " + victim->getDisplayedName(), ChatSystemMessage::DISPLAY_CHATANDSCREEN);
+	//chatManager->broadcastGalaxy(NULL, victor->getDisplayedName() + " has defeated " + victim->getDisplayedName());
 }
 
 float PlayerManagerImplementation::getSpeciesXpModifier(const String& species, const String& xpType) {
