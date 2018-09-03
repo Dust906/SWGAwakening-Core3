@@ -60,7 +60,7 @@ public:
 
 			int num = (player->getSlottedObject("ghost").castTo<PlayerObject*>())->getExperience(xpType);
 			amount -= num;
-			player->getZoneServer()->getPlayerManager()->awardExperience(player, xpType, amount);
+			player->getZoneServer()->getPlayerManager()->awardExperience(player, xpType, amount, true, 1.0f, false);
 
 			creature->sendSystemMessage("Experience Successfully changed");
 
