@@ -549,6 +549,8 @@ class PlayerManager extends Observer implements Logger {
 
 	public native void updatePvPKillCount(CreatureObject player);
 
+	public native void logPvpKill(CreatureObject victor, CreatureObject victim);
+
 	private native void loadXpBonusList();
 	public native float getSpeciesXpModifier(final string species, final string xpType);
 }
