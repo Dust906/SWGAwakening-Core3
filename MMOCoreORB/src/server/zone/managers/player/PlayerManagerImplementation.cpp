@@ -1302,6 +1302,7 @@ void PlayerManagerImplementation::ejectPlayerFromBuilding(CreatureObject* player
 void PlayerManagerImplementation::disseminateExperience(TangibleObject* destructedObject, ThreatMap* threatMap,
 	SynchronizedVector<ManagedReference<CreatureObject*> >* spawnedCreatures,Zone* lairZone) {
 	uint32 totalDamage = threatMap->getTotalDamage();
+	bool isNpcObject = false;
 
 	if (totalDamage == 0) {
 		threatMap->removeAll();
@@ -1337,7 +1338,7 @@ void PlayerManagerImplementation::disseminateExperience(TangibleObject* destruct
 
 			if (ai != NULL) {
 				Creature* creature = cast<Creature*>(ai.get());
-
+				isNpcObject = creature->isHumanoid();
 				if (creature != NULL && creature->isBaby())
 					continue;
 				else
@@ -1456,7 +1457,7 @@ void PlayerManagerImplementation::disseminateExperience(TangibleObject* destruct
 					xpAmount *= 0.20f;
 					if (attacker->hasSkill("force_rank_light_novice") || attacker->hasSkill("force_rank_dark_novice")) {
 						// award if the target had a level of 150 or greater, level 100 or greater if opposing faction
-						if (targetLevel >= minLevelNonFactional) {
+						if (isNpcObject && targetLevel >= minLevelNonFactional) {
 							grantFRS = true;
 						} else if (targetIsOpposingFaction && targetLevel >= minLevelFactional) {
 							grantFRS = true;
