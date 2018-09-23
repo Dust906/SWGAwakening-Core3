@@ -768,6 +768,10 @@ void ChatManagerImplementation::handleChatRoomMessage(CreatureObject* sender, co
 	UnicodeString formattedMessage(formatMessage(message));
 
 	ManagedReference<ChatRoom*> planetRoom = zone->getPlanetChatRoom();
+	ManagedReference<GuildObject*> guild = sender->getGuildObject().get();
+	if (guild != NULL){
+		guildRoom = guild->getChatRoom();
+	}
 
 	BaseMessage* msg = new ChatRoomMessage(fullName, server->getGalaxyName(), formattedMessage, roomID);
 
@@ -807,6 +811,8 @@ void ChatManagerImplementation::handleChatRoomMessage(CreatureObject* sender, co
 		if (sender->isPlayerCreature()){
 			playerManager->logPlayerAction("pvpChatLog", chatLogMessage);
 		}
+		channel->broadcastMessageCheckIgnore(msg, name);
+	} else if (guildRoom != NULL && guildRoom->getRoomID() == roomID){
 		channel->broadcastMessageCheckIgnore(msg, name);
 	} else {
 		channel->broadcastMessage(msg);

@@ -42,13 +42,21 @@ public:
 
 		PlayerManager* playerManager = server->getPlayerManager();
 
-		bool validName = playerManager->existsName(nameLower);
-
-		if (creature->getFirstName() == "Discord" || creature->getFirstName() == "PvP" || creature->getFirstName() == "ChatRelay") {
-			validName = true;
-		} else {
-			validName = validName && (creature->getFirstName().toLowerCase().compareTo( nameLower ) != 0);
+		bool canIgnoreSelf = false;
+		String nameParam = nameLower;
+		try{
+			Database::escapeString(nameParam);
+			String query = "SELECT firstname FROM self_ignore_permits WHERE LOWER(firstname) = \""
+					+ nameParam + "\"";
+			Reference<ResultSet*> resultSet = ServerDatabase::instance()->executeQuery(query);
+			canIgnoreSelf = resultSet->next();
+		} catch (DatabaseException& e){
+			canIgnoreSelf = false;
 		}
+
+		bool validName = (playerManager->existsName(nameLower)
+				&& (creature->getFirstName().toLowerCase().compareTo( nameLower ) != 0)) || canIgnoreSelf;
+
 
 		if (!validName) {
 			StringIdChatParameter param("cmnty", "ignore_not_found");
