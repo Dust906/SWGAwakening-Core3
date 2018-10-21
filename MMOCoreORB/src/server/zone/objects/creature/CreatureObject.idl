@@ -35,6 +35,7 @@ import system.lang.Long;
 import engine.service.proto.BasePacket;
 import system.thread.Mutex;
 import server.zone.objects.creature.credits.CreditObject;
+import server.zone.managers.auction.AuctionSearchTask;
 
 @mock
 class CreatureObject extends TangibleObject {
@@ -72,6 +73,9 @@ class CreatureObject extends TangibleObject {
 
 	@dereferenced
 	protected WearablesDeltaVector wearablesVector;
+
+	@weakReference
+	protected transient AuctionSearchTask auctionSearch;
 
 	protected float accelerationMultiplierBase;
 	protected float accelerationMultiplierMod;
@@ -2173,5 +2177,17 @@ class CreatureObject extends TangibleObject {
 	@dirty
 	public native boolean isHumanoid() {
 		return (getSpecies() > -1 && getSpecies() < 8) || getSpecies() == 33 || getSpecies() == 49;
+	}
+
+	@local
+	@weakReference
+	public AuctionSearchTask getAuctionSearchTask() {
+		return auctionSearch;
+	}
+
+	@preLocked
+	@local
+	public void setAuctionSearchTask(AuctionSearchTask task) {
+		auctionSearch = task;
 	}
 }

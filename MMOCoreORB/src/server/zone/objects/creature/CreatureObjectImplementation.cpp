@@ -15,6 +15,7 @@
 #include "server/zone/managers/mission/MissionManager.h"
 #include "server/zone/managers/creature/PetManager.h"
 #include "server/zone/managers/reaction/ReactionManager.h"
+#include "server/zone/managers/auction/AuctionSearchTask.h"
 #include "server/zone/ZoneClientSession.h"
 #include "server/zone/packets/creature/CreatureObjectMessage1.h"
 #include "server/zone/packets/creature/CreatureObjectMessage3.h"
@@ -134,6 +135,7 @@ void CreatureObjectImplementation::initializeMembers() {
 	weapon = NULL;
 	guild = NULL;
 	group = NULL;
+	auctionSearch = NULL;
 	groupInviterID = 0;
 	groupInviteCounter = 0;
 	targetID = 0;
