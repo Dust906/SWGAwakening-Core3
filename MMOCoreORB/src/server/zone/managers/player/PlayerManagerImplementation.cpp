@@ -1302,7 +1302,6 @@ void PlayerManagerImplementation::ejectPlayerFromBuilding(CreatureObject* player
 void PlayerManagerImplementation::disseminateExperience(TangibleObject* destructedObject, ThreatMap* threatMap,
 	SynchronizedVector<ManagedReference<CreatureObject*> >* spawnedCreatures,Zone* lairZone) {
 	uint32 totalDamage = threatMap->getTotalDamage();
-	bool isNpcObject = false;
 
 	if (totalDamage == 0) {
 		threatMap->removeAll();
@@ -1338,7 +1337,7 @@ void PlayerManagerImplementation::disseminateExperience(TangibleObject* destruct
 
 			if (ai != NULL) {
 				Creature* creature = cast<Creature*>(ai.get());
-				isNpcObject = creature->isHumanoid();
+
 				if (creature != NULL && creature->isBaby())
 					continue;
 				else
@@ -1346,8 +1345,10 @@ void PlayerManagerImplementation::disseminateExperience(TangibleObject* destruct
 			}
 		}
 
-		if (ai != NULL)
+		if (ai != NULL) {
 			baseXp = ai->getBaseXp();
+		}
+
 
 	} else {
 		ManagedReference<AiAgent*> ai = cast<AiAgent*>(destructedObject);
@@ -1447,8 +1448,8 @@ void PlayerManagerImplementation::disseminateExperience(TangibleObject* destruct
 				bool grantFRS = false;
 				bool targetIsOpposingFaction = (destructedObject->isRebel() && attacker->isImperial()) || (destructedObject->isImperial() && attacker->isRebel());
 				float frsAmount = 0;
-				int minLevelFactional = 100;
-				int minLevelNonFactional = 150;
+				int minLevelFactional = 200;
+				int minLevelNonFactional = 250;
 				int targetLevel = destructedObject->getLevel();
 				//Jedi experience doesn't count towards combat experience, and is earned at 20% the rate of normal experience
 				if (xpType != "jedi_general") {
@@ -1457,7 +1458,7 @@ void PlayerManagerImplementation::disseminateExperience(TangibleObject* destruct
 					xpAmount *= 0.20f;
 					if (attacker->hasSkill("force_rank_light_novice") || attacker->hasSkill("force_rank_dark_novice")) {
 						// award if the target had a level of 150 or greater, level 100 or greater if opposing faction
-						if (isNpcObject && targetLevel >= minLevelNonFactional) {
+						if (targetLevel >= minLevelNonFactional) {
 							grantFRS = true;
 						} else if (targetIsOpposingFaction && targetLevel >= minLevelFactional) {
 							grantFRS = true;
@@ -1470,7 +1471,7 @@ void PlayerManagerImplementation::disseminateExperience(TangibleObject* destruct
 				awardExperience(attacker, xpType, xpAmount);
 				//Award FRS
 				if (grantFRS) {
-					awardExperience(attacker, "force_rank_xp", frsAmount);
+					awardExperience(attacker, "force_rank_xp", frsAmount, true, 1.0f, false);
 				}
 			}
 
