@@ -212,17 +212,17 @@ void VendorManager::promptRelistItems(CreatureObject* player, TangibleObject* ve
 	ManagedReference<AuctionsMap*> auctionsMap = auctionManager->getAuctionMap();
 	if (auctionsMap == NULL) return;
 
-	int expiredItems = auctionsMap->getVendorExpiredItemCount(vendor);
+	int expiredSales = auctionsMap->getVendorExpiredItemCount(vendor) - auctionsMap->getVendorExpiredOffersCount(vendor, player);
 
-	if (expiredItems > 0){
+	if (expiredSales > 0){
 		SuiMessageBox* confirmationWindow = new SuiMessageBox(player, SuiWindowType::NONE);
 		confirmationWindow->setCallback(new RelistItemsSuiCallback(player->getZoneServer()));
 		confirmationWindow->setUsingObject(vendor);
 		confirmationWindow->setPromptTitle("Restock Items");
 		confirmationWindow->setPromptText("The service fee for re-listing the "
-				+ String::valueOf(expiredItems)
+				+ String::valueOf(expiredSales)
 				+ " items in the stockroom is "
-				+ String::valueOf(expiredItems * 50)
+				+ String::valueOf(expiredSales * 50)
 				+ " credits.\n\nContinue?");
 		confirmationWindow->setOkButton(true, "@yes");
 		confirmationWindow->setCancelButton(true, "@no");
@@ -360,8 +360,9 @@ void VendorManager::handleRelistItems(CreatureObject* player, TangibleObject* ve
 	Reference<TerminalItemList*> itemList = vendorList.get(0);
 
 	int availableCredits = player->getBankCredits();
-	int expiredItemsCount = auctionsMap->getVendorExpiredItemCount(vendor);
-	int totalFees = expiredItemsCount * 50;
+	int expiredOffers = auctionsMap->getVendorExpiredOffersCount(vendor, player);
+	int expiredSalesCount = auctionsMap->getVendorExpiredItemCount(vendor) - expiredOffers;
+	int totalFees = expiredSalesCount * 50;
 	if (totalFees > availableCredits) {
 		player->sendSystemMessage("You do not have enough credits for the relisting fee");
 		return;
@@ -369,15 +370,17 @@ void VendorManager::handleRelistItems(CreatureObject* player, TangibleObject* ve
 
 	if (itemList != NULL){
 
-		while (expiredItemsCount > 0) {
+		while (expiredSalesCount > 0) {
 			for (int i = 0; i < itemList->size(); i++) {
 				ManagedReference<AuctionItem*> item = itemList->get(i);
-				Locker locker(item);
-				if (item->getStatus() == AuctionItem::EXPIRED){
-					auctionManager->addSaleItem(player, item->getAuctionedItemObjectID(), vendor, item->getItemDescription(), item->getPrice(), AuctionManager::VENDOREXPIREPERIOD, false, false, true);
+				if (item != NULL) {
+					Locker locker(item);
+					if (item->getStatus() == AuctionItem::EXPIRED && item->getOwnerID() == player->getObjectID()) {
+						auctionManager->addSaleItem(player, item->getAuctionedItemObjectID(), vendor, item->getItemDescription(), item->getPrice(), AuctionManager::VENDOREXPIREPERIOD, false, false, true);
+					}
 				}
 			}
-			expiredItemsCount = auctionsMap->getVendorExpiredItemCount(vendor);
+			expiredSalesCount = auctionsMap->getVendorExpiredItemCount(vendor) - expiredOffers;
 		}
 	}
 	// charge the fees after the entire transaction is complete

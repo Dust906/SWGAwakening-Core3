@@ -241,7 +241,7 @@ void AuctionManagerImplementation::addSaleItem(CreatureObject* player, uint64 ob
 	if(oldItem == NULL) {
 		if (objectToSell == NULL || !objectToSell->isASubChildOf(player)) {
 			if(objectToSell != NULL)
-				error("trying to add invalid object");
+				error("trying to add invalid object - objectToSell is NULL or not a sub-child of seller");
 			ItemSoldMessage* soldMessage = new ItemSoldMessage(objectid, ItemSoldMessage::INVALIDITEM);
 			player->sendMessage(soldMessage);
 			return;
@@ -256,7 +256,7 @@ void AuctionManagerImplementation::addSaleItem(CreatureObject* player, uint64 ob
 
 		/// Is it being sold from the stockroom
 		if (oldItem->getOwnerID() != player->getObjectID()) {
-			error("trying to add invalid object");
+			error("trying to add invalid object - oldItem OwnerID does not match the seller ObjectID");
 			ItemSoldMessage* soldMessage = new ItemSoldMessage(objectid, ItemSoldMessage::INVALIDITEM);
 			player->sendMessage(soldMessage);
 			return;
