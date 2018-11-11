@@ -26,6 +26,11 @@ public:
 	}
 
 	int doQueueCommand(CreatureObject* creature, const uint64& target, const UnicodeString& arguments) const {
+		if (creature->hasState(CreatureState::IMMOBILIZED)) {
+			creature->sendSystemMessage("You cannot force run while snared");
+			return GENERALERROR;
+		}
+
 		int res = creature->hasBuff(buffCRC) ? NOSTACKJEDIBUFF : doJediSelfBuffCommand(creature);
 
 		if (res == NOSTACKJEDIBUFF) {

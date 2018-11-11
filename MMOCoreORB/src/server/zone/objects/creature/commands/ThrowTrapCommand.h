@@ -176,7 +176,7 @@ public:
 			StringIdChatParameter message;
 			ManagedReference<Buff*> buff = NULL;
 			int damage = 0;
-
+			int taskTimer = 2300;  // default value needs to change for jedi snare effect
 			if (hit) {
 				message.setStringId("trap/trap" , trapData->getSuccessMessage());
 
@@ -202,6 +202,7 @@ public:
 							creature->removeBuff(STRING_HASHCODE("burstrun"));
 							creature->removeBuff(STRING_HASHCODE("retreat"));
 						}
+						taskTimer = 100;
 						buff->setSpeedMultiplierMod(0.1f);
 						buff->setAccelerationMultiplierMod(0.1f);
 					}
@@ -233,7 +234,7 @@ public:
 
 
 			Reference<ThrowTrapTask*> trapTask = new ThrowTrapTask(creature, targetCreature, buff, message, trapData->getPoolToDamage(), damage, hit);
-			creature->addPendingTask("throwtrap", trapTask, 2300);
+			creature->addPendingTask("throwtrap", trapTask, taskTimer);
 
 			//Reduce cost based upon player's strength, quickness, and focus if any are over 300
 			int healthCost = creature->calculateCostAdjustment(CreatureAttribute::STRENGTH, trapData->getHealthCost());
