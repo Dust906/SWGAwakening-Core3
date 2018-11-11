@@ -21,7 +21,7 @@ float VisibilityManager::calculateVisibilityIncrease(CreatureObject* creature) {
 
 	float visibilityIncrease = 0;
 	// SWG Awakening Custom - visibility range is set to 100m
-	int visibilityRange = 100;
+	int visibilityRange = 80;
 
 	if (zone == NULL)
 		return visibilityIncrease;
