@@ -164,7 +164,7 @@ public:
 				creature->addCooldown("throwtrap", 15000); //15 Seconds
 
 				Locker locker(targetCreature);
-				targetCreature->updateTrapImmunityTime(20000); //20 Seconds
+				targetCreature->updateTrapImmunityTime(22000); //20 Seconds
 			} else {
 				creature->addCooldown("throwtrap", 1500);
 			}
@@ -202,7 +202,7 @@ public:
 							creature->removeBuff(STRING_HASHCODE("burstrun"));
 							creature->removeBuff(STRING_HASHCODE("retreat"));
 						}
-						taskTimer = 100;
+						taskTimer = 1;
 						buff->setSpeedMultiplierMod(0.1f);
 						buff->setAccelerationMultiplierMod(0.1f);
 					}
