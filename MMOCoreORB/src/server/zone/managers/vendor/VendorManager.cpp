@@ -375,8 +375,9 @@ void VendorManager::handleRelistItems(CreatureObject* player, TangibleObject* ve
 				ManagedReference<AuctionItem*> item = itemList->get(i);
 				if (item != NULL) {
 					Locker locker(item);
+					int salePrice = item->getPrice() > 99999990 ? 99999990 : item->getPrice();
 					if (item->getStatus() == AuctionItem::EXPIRED && item->getOwnerID() == player->getObjectID()) {
-						auctionManager->addSaleItem(player, item->getAuctionedItemObjectID(), vendor, item->getItemDescription(), item->getPrice(), AuctionManager::VENDOREXPIREPERIOD, false, false, true);
+						auctionManager->addSaleItem(player, item->getAuctionedItemObjectID(), vendor, item->getItemDescription(), salePrice, AuctionManager::VENDOREXPIREPERIOD, false, false, true);
 					}
 				}
 			}
