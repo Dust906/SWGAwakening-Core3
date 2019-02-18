@@ -60,9 +60,14 @@ public:
 
 			int num = (player->getSlottedObject("ghost").castTo<PlayerObject*>())->getExperience(xpType);
 			amount -= num;
-			player->getZoneServer()->getPlayerManager()->awardExperience(player, xpType, amount, true, 1.0f, false);
+			if (xpType.toLowerCase() == "pvprating"){
+				player->getPlayerObject()->setPvpRating(amount);
+				creature->sendSystemMessage("PvP rating successfully changed");
+			} else {
+				player->getZoneServer()->getPlayerManager()->awardExperience(player, xpType, amount, true, 1.0f, false);
 
-			creature->sendSystemMessage("Experience Successfully changed");
+				creature->sendSystemMessage("Experience Successfully changed");
+			}
 
 		} catch (Exception& e) {
 			creature->sendSystemMessage("invalid arguments for setExperience command. usage: setExperience <firstName> <experienceType> <amount>");
