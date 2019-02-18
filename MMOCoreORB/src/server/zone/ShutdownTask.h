@@ -31,7 +31,10 @@ public:
 
 		Logger::console.info(str, true);
 
-		zoneServer->getChatManager()->broadcastGalaxy(NULL, str);
+		// Only broadcast every five minutes until timer is at 5 mins or less
+		bool requireBroadcast = (minutesRemaining < 5) || ((minutesRemaining % 5) == 0);
+
+		if (requireBroadcast) zoneServer->getChatManager()->broadcastGalaxy(NULL, str);
 
 		if (minutesRemaining <= 0) {
 			ServerCore::getInstance()->signalShutdown();
