@@ -68,6 +68,7 @@ protected:
 	float scale;
 
 	int baseXp;
+	int frsXp;
 	int baseHAM;
 	int baseHAMmax;
 
@@ -301,6 +302,10 @@ public:
 
 	inline int getBaseXp() {
 		return baseXp;
+	}
+
+	inline int getFrsXp() {
+		return frsXp;
 	}
 
 	inline int getBaseHAM() {

@@ -216,6 +216,16 @@ class Creature extends AiAgent {
 			return super.npcTemplate.getBaseXp();
 	}
 
+	public int getFrsXp() {
+		if (super.npcTemplate == null)
+			return 0;
+
+		if (isBaby() || isEventMob())
+			return 0;
+		else	
+			return super.npcTemplate.getFrsXp();
+	}
+
 	public string getControlDeviceTemplate() {
 		if (super.npcTemplate == null)
 			return "";

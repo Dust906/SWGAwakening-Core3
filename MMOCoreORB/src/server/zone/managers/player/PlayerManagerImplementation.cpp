@@ -861,8 +861,8 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 
 	PlayerObject* ghost = player->getPlayerObject();
 
-	if (ghost != NULL) {
-		if (ghost != NULL && (ghost->hasGcwTef() || ghost->hasBhTef()))
+	if (ghost != nullptr) {
+		if (ghost != nullptr && (ghost->hasGcwTef() || ghost->hasBhTef()))
 			ghost->schedulePvpTefRemovalTask(true, true);
 
 		ghost->resetIncapacitationTimes();
@@ -874,7 +874,7 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 		if (attackerCreature->isPet()) {
 			CreatureObject* owner = attackerCreature->getLinkedCreature().get();
 
-			if (owner != NULL && owner->isPlayerCreature()) {
+			if (owner != nullptr && owner->isPlayerCreature()) {
 					attackerCreature = owner;
 			}
 		}
@@ -886,13 +886,13 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 				FactionManager::instance()->awardPvpFactionPoints(attackerCreature, player);
 				logPvpKill(attackerCreature, player);
 
-				if (attackerGhost != NULL)
+				if (attackerGhost != nullptr)
 					updatePvPKillCount(attackerCreature);
 
-				if (ghost != NULL)
+				if (ghost != nullptr)
 					ghost->updatePvpDeaths();
 
-				if (attackerGhost != NULL && attackerCreature->hasBountyMissionFor(player))
+				if (attackerGhost != nullptr && attackerCreature->hasBountyMissionFor(player))
 					attackerGhost->updateBountyKills();
 			}
 		}
@@ -912,7 +912,7 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 		Reference<ThreatMap*> copyThreatMap = new ThreatMap(*threatMap);
 
 		Core::getTaskManager()->executeTask([=] () {
-			if (playerRef != NULL) {
+			if (playerRef != nullptr) {
 				Locker locker(playerRef);
 				doPvpDeathRatingUpdate(playerRef, copyThreatMap);
 			}
@@ -1316,6 +1316,7 @@ void PlayerManagerImplementation::disseminateExperience(TangibleObject* destruct
 	float gcwBonus = 1.0f;
 	uint32 winningFaction = -1;
 	int baseXp = 0;
+	int frsXp = 0;
 	Zone* zone = lairZone;
 	if (zone==NULL){
 		zone = destructedObject->getZone();
@@ -1347,14 +1348,17 @@ void PlayerManagerImplementation::disseminateExperience(TangibleObject* destruct
 
 		if (ai != NULL) {
 			baseXp = ai->getBaseXp();
+			frsXp = ai->getFrsXp();
 		}
 
 
 	} else {
 		ManagedReference<AiAgent*> ai = cast<AiAgent*>(destructedObject);
 
-		if (ai != NULL)
+		if (ai != NULL) {
 			baseXp = ai->getBaseXp();
+			frsXp = ai->getFrsXp();
+		}
 	}
 
 	for (int i = 0; i < threatMap->size(); ++i) {
@@ -1445,33 +1449,33 @@ void PlayerManagerImplementation::disseminateExperience(TangibleObject* destruct
 					xpAmount *= gcwBonus;
 
 				//We need to check for FRS eligibility
-				bool grantFRS = false;
-				bool targetIsOpposingFaction = (destructedObject->isRebel() && attacker->isImperial()) || (destructedObject->isImperial() && attacker->isRebel());
-				float frsAmount = 0;
-				int minLevelFactional = 200;
-				int minLevelNonFactional = 250;
-				int targetLevel = destructedObject->getLevel();
+				bool grantFRS = attacker->hasSkill("force_rank_light_novice") || attacker->hasSkill("force_rank_dark_novice");
+				//bool targetIsOpposingFaction = (destructedObject->isRebel() && attacker->isImperial()) || (destructedObject->isImperial() && attacker->isRebel());
+				//float frsAmount = 0;
+				//int minLevelFactional = 200;
+				//int minLevelNonFactional = 250;
+				//int targetLevel = destructedObject->getLevel();
 				//Jedi experience doesn't count towards combat experience, and is earned at 20% the rate of normal experience
 				if (xpType != "jedi_general") {
 					combatXp += xpAmount;
 				} else {
 					xpAmount *= 0.20f;
-					if (attacker->hasSkill("force_rank_light_novice") || attacker->hasSkill("force_rank_dark_novice")) {
+					//if (attacker->hasSkill("force_rank_light_novice") || attacker->hasSkill("force_rank_dark_novice")) {
 						// award if the target had a level of 150 or greater, level 100 or greater if opposing faction
-						if (targetLevel >= minLevelNonFactional) {
-							grantFRS = true;
-						} else if (targetIsOpposingFaction && targetLevel >= minLevelFactional) {
-							grantFRS = true;
-						}
-					}
-					frsAmount = xpAmount * 0.01f;
+						//if (targetLevel >= minLevelNonFactional) {
+							//grantFRS = true;
+						//} else if (targetIsOpposingFaction && targetLevel >= minLevelFactional) {
+							//grantFRS = true;
+						//}
+					//}
+					//frsAmount = xpAmount * 0.01f;
 				}
 
 				//Award individual expType
 				awardExperience(attacker, xpType, xpAmount);
 				//Award FRS
 				if (grantFRS) {
-					awardExperience(attacker, "force_rank_xp", frsAmount, true, 1.0f, false);
+					awardExperience(attacker, "force_rank_xp", frsXp, true, 1.0f, false);
 				}
 			}
 
@@ -5491,7 +5495,7 @@ void PlayerManagerImplementation::sendAdminList(CreatureObject* player) {
 void PlayerManagerImplementation::doPvpDeathRatingUpdate(CreatureObject* player, ThreatMap* threatMap) {
 	PlayerObject* ghost = player->getPlayerObject();
 
-	if (ghost == NULL)
+	if (ghost == nullptr)
 		return;
 
 	uint32 totalDamage = threatMap->getTotalDamage();
@@ -5505,21 +5509,55 @@ void PlayerManagerImplementation::doPvpDeathRatingUpdate(CreatureObject* player,
 	uint32 highDamageAmount = 0;
 	FrsManager* frsManager = server->getFrsManager();
 	int frsXpAdjustment = 0;
+	bool throttleOnly = true;
 
 	for (int i = 0; i < threatMap->size(); ++i) {
 		ThreatMapEntry* entry = &threatMap->elementAt(i).getValue();
 		CreatureObject* attacker = threatMap->elementAt(i).getKey();
 
-		if (entry == NULL || attacker == NULL || attacker == player || !attacker->isPlayerCreature())
-			continue;
-
-		if (!player->isAttackableBy(attacker, true))
+		if (entry == nullptr || attacker == nullptr || attacker == player || !attacker->isPlayerCreature())
 			continue;
 
 		PlayerObject* attackerGhost = attacker->getPlayerObject();
 
-		if (attackerGhost == NULL)
+		if (attackerGhost == nullptr)
 			continue;
+
+		bool preventionEnabled = ServerSettings::instance()->getFightClubbingPreventionEnabled();
+		String banMessage = "";
+
+		if (preventionEnabled && frsManager != nullptr && frsManager->isFrsEnabled() && frsManager->isValidFrsBattle(attacker, player)) {
+			if (ghost->getAccountID() == attackerGhost->getAccountID()) {
+				//Ban Attacker
+				if (attackerGhost->getFCBanCount() == 0) {
+					banMessage = systemBanAccount(attackerGhost->getAccount(), 2880, "Fight Clubbing");
+				} else if (attackerGhost->getFCBanCount() == 1) {
+					banMessage = systemBanAccount(attackerGhost->getAccount(), 10080, "Fight Clubbing");
+				} else if (attackerGhost->getFCBanCount() >= 2) {
+					banMessage = systemBanAccount(attackerGhost->getAccount(), 525600, "Fight Clubbing");
+				}
+
+				logPlayerAction("banLog", banMessage);
+				attackerGhost->setFCBanCount(attackerGhost->getFCBanCount() + 1);
+
+			} else if (ghost->getIpAddress() == attackerGhost->getIpAddress() && ghost->getAccountID() != attackerGhost->getAccountID()) {
+				if (ghost->getFCBanCount() == 0) {
+					banMessage = systemBanAccount(ghost->getAccount(), 2880, "Fight Clubbing");
+				} else if (ghost->getFCBanCount() == 1) {
+					banMessage = systemBanAccount(ghost->getAccount(), 10080, "Fight Clubbing");
+				} else if (ghost->getFCBanCount() >= 2) {
+					banMessage = systemBanAccount(ghost->getAccount(), 525600, "Fight Clubbing");
+				}
+
+				logPlayerAction("banLog", banMessage);
+				ghost->setFCBanCount(ghost->getFCBanCount() + 1);
+			}
+		}
+
+		if (banMessage != "")
+			continue;
+
+		Locker crossLock(attacker, player);
 
 		if (entry->getTotalDamage() <= 0)
 			continue;
@@ -5565,45 +5603,11 @@ void PlayerManagerImplementation::doPvpDeathRatingUpdate(CreatureObject* player,
 			toAttacker.setDI(curAttackerRating);
 
 			attacker->sendSystemMessage(toAttacker);
-
-			continue;
 		}
 
 		float damageContribution = (float) entry->getTotalDamage() / totalDamage;
 
-		if (frsManager != NULL && frsManager->isFrsEnabled() && frsManager->isValidFrsBattle(attacker, player)) {
-			// Ban Levels: 2 days, 7 days, & 1 year.
-			bool preventionEnabled = ServerSettings::instance()->getFightClubbingPreventionEnabled();
-			if (preventionEnabled && (attackerGhost->getAccountID() == ghost->getAccountID() || attackerGhost->getIpAddress() == ghost->getIpAddress())) {
-				String banMessage;
-
-				//Ban Attacker
-				if (attackerGhost->getFCBanCount() == 0) {
-					banMessage = systemBanAccount(attackerGhost->getAccount(), 2880, "Fight Clubbing");
-				} else if (attackerGhost->getFCBanCount() == 1) {
-					banMessage = systemBanAccount(attackerGhost->getAccount(), 10080, "Fight Clubbing");
-				} else if (attackerGhost->getFCBanCount() >= 2) {
-					banMessage = systemBanAccount(attackerGhost->getAccount(), 525600, "Fight Clubbing");
-				}
-
-				logPlayerAction("banLog", banMessage);
-				attackerGhost->setFCBanCount(attackerGhost->getFCBanCount() + 1);
-
-				//Ban killed player if they are not on the same account.
-				if (attackerGhost->getAccountID() != ghost->getAccountID()) {
-					if (ghost->getFCBanCount() == 0) {
-						banMessage = systemBanAccount(ghost->getAccount(), 2880, "Fight Clubbing");
-					} else if (ghost->getFCBanCount() == 1) {
-						banMessage = systemBanAccount(ghost->getAccount(), 10080, "Fight Clubbing");
-					} else if (ghost->getFCBanCount() >= 2) {
-						banMessage = systemBanAccount(ghost->getAccount(), 525600, "Fight Clubbing");
-					}
-					ghost->setFCBanCount(ghost->getFCBanCount() + 1);
-					logPlayerAction("banLog", banMessage);
-				}
-			continue;
-			}
-
+		if (frsManager != nullptr && frsManager->isFrsEnabled() && frsManager->isValidFrsBattle(attacker, player)) {
 			int attackerFrsXp = frsManager->calculatePvpExperienceChange(attacker, player, damageContribution, false);
 			int victimFrsXp = frsManager->calculatePvpExperienceChange(attacker, player, damageContribution, true);
 			frsXpAdjustment += victimFrsXp;
@@ -5621,56 +5625,54 @@ void PlayerManagerImplementation::doPvpDeathRatingUpdate(CreatureObject* player,
 			logPlayerAction("frsKillLog", frsLogMsg.toString());
 		}
 
-		if (!allowSameAccountPvpRatingCredit && ghost->getAccountID() == attackerGhost->getAccountID())
-			continue;
-
 		ghost->addToKillerList(attacker->getObjectID());
+		throttleOnly = false;
 
-		int attackerRatingDelta = 20 + ((curAttackerRating - defenderPvpRating) / 25);
-		int victimRatingDelta = -20 + ((defenderPvpRating - curAttackerRating) / 25);
+		if (defenderPvpRating > PlayerObject::PVP_RATING_FLOOR) {
+			int attackerRatingDelta = 20 + ((defenderPvpRating - curAttackerRating) / 25);
+			int victimRatingDelta = -20 + ((curAttackerRating - defenderPvpRating) / 25);
 
-		if (attackerRatingDelta > 40)
-			attackerRatingDelta = 40;
-		else if (attackerRatingDelta < 0)
-			attackerRatingDelta = 0;
+			if (attackerRatingDelta > 40)
+				attackerRatingDelta = 40;
+			else if (attackerRatingDelta < 0)
+				attackerRatingDelta = 0;
 
-		if (victimRatingDelta < -40)
-			victimRatingDelta = -40;
-		else if (victimRatingDelta > 0)
-			victimRatingDelta = 0;
+			if (victimRatingDelta < -40)
+				victimRatingDelta = -40;
+			else if (victimRatingDelta > 0)
+				victimRatingDelta = 0;
 
-		attackerRatingDelta *= damageContribution;
-		victimRatingDelta *= damageContribution;
+			attackerRatingDelta *= damageContribution;
+			victimRatingDelta *= damageContribution;
 
-		victimRatingTotalDelta += victimRatingDelta;
-		int newRating = curAttackerRating + attackerRatingDelta;
+			victimRatingTotalDelta += victimRatingDelta;
+			int newRating = curAttackerRating + attackerRatingDelta;
 
-		Locker crossLock(attacker, player);
+			attackerGhost->setPvpRating(newRating);
 
-		attackerGhost->setPvpRating(newRating);
+			crossLock.release();
 
-		crossLock.release();
+			String stringFile;
 
-		String stringFile;
+			int randNum = System::random(2) + 1;
+			if (attacker->getSpecies() == CreatureObject::TRANDOSHAN)
+				stringFile = "trandoshan_win" + String::valueOf(randNum);
+			else
+				stringFile = "win" + String::valueOf(randNum);
 
-		int randNum = System::random(2) + 1;
-		if (attacker->getSpecies() == CreatureObject::TRANDOSHAN)
-			stringFile = "trandoshan_win" + String::valueOf(randNum);
-		else
-			stringFile = "win" + String::valueOf(randNum);
+			StringIdChatParameter toAttacker;
+			toAttacker.setStringId("pvp_rating", stringFile);
+			toAttacker.setTT(player->getFirstName());
+			toAttacker.setDI(newRating);
 
-		StringIdChatParameter toAttacker;
-		toAttacker.setStringId("pvp_rating", stringFile);
-		toAttacker.setTT(player->getFirstName());
-		toAttacker.setDI(newRating);
-
-		attacker->sendSystemMessage(toAttacker);
+			attacker->sendSystemMessage(toAttacker);
+		}
 	}
 
-	if (highDamageAttacker == NULL)
+	if (highDamageAttacker == nullptr)
 		return;
 
-	if (frsManager != NULL && frsManager->isFrsEnabled() && frsXpAdjustment < 0) {
+	if (frsManager != nullptr && frsManager->isFrsEnabled() && frsXpAdjustment < 0) {
 		Locker crossLock(frsManager, player);
 
 		frsManager->adjustFrsExperience(player, frsXpAdjustment);
@@ -5691,6 +5693,10 @@ void PlayerManagerImplementation::doPvpDeathRatingUpdate(CreatureObject* player,
 		player->sendSystemMessage(toVictim);
 	} else if (victimRatingTotalDelta != 0) {
 		int newDefenderRating = defenderPvpRating + victimRatingTotalDelta;
+
+		if (newDefenderRating < PlayerObject::PVP_RATING_FLOOR)
+			newDefenderRating = PlayerObject::PVP_RATING_FLOOR;
+
 		ghost->setPvpRating(newDefenderRating);
 
 		String stringFile;
@@ -5707,7 +5713,7 @@ void PlayerManagerImplementation::doPvpDeathRatingUpdate(CreatureObject* player,
 		toVictim.setDI(newDefenderRating);
 
 		player->sendSystemMessage(toVictim);
-	} else {
+	} else if (throttleOnly) {
 		String stringFile;
 
 		if (player->getSpecies() == CreatureObject::TRANDOSHAN)

@@ -912,6 +912,7 @@ class AiAgent extends CreatureObject {
 		return newValue;
 	}
 
+
 	@dirty
 	public abstract boolean isSpecialProtection(int resistType) {
 		if (petDeed != null) {
@@ -1034,6 +1035,13 @@ class AiAgent extends CreatureObject {
 			return 0;
 
 		return npcTemplate.get().getBaseXp();
+	}
+
+	@dirty
+	public abstract int getFrsXp() {
+		if (npcTemplate.get() == null || isEventMob())
+			return 0;
+		return npcTemplate.get().getFrsXp();
 	}
 
 	@dirty

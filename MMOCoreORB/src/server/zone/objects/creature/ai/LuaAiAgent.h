@@ -92,6 +92,7 @@ namespace ai {
 		int getDamageMin(lua_State* L);
 		int getDamageMax(lua_State* L);
 		int getBaseXp(lua_State* L);
+		int getFrsXp(lua_State* L);
 		int getDiet(lua_State* L);
 		int hasLoot(lua_State* L);
 		int isEventMob(lua_State* L);
