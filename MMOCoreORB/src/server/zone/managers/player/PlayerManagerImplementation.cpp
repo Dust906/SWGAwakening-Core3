@@ -860,6 +860,7 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 	player->updateTimeOfDeath();
 	player->clearBuffs(true, false);
 
+
 	if (player->getSkillMod("private_damage_divisor") > 0) {
 		ManagedReference<PrivateSkillMultiplierBuff*> multBuff = new PrivateSkillMultiplierBuff(player, STRING_HASHCODE("private_damage_divisor"), 340282346638528859811704183484516925440.0, BuffType::JEDI);
 		Locker locker(multBuff);
