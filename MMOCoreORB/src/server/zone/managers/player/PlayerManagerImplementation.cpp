@@ -89,6 +89,7 @@
 
 #include "server/zone/managers/stringid/StringIdManager.h"
 #include "server/zone/objects/creature/buffs/PowerBoostBuff.h"
+#include "server/zone/objects/creature/buffs/PrivateSkillMultiplierBuff.h"
 #include "server/zone/objects/creature/ai/Creature.h"
 #include "server/zone/objects/creature/ai/NonPlayerCreatureObject.h"
 #include "server/zone/objects/creature/events/DespawnCreatureTask.h"
@@ -858,6 +859,13 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 
 	player->updateTimeOfDeath();
 	player->clearBuffs(true, false);
+
+	if (player->getSkillMod("private_damage_divisor") > 0) {
+		ManagedReference<PrivateSkillMultiplierBuff*> multBuff = new PrivateSkillMultiplierBuff(player, STRING_HASHCODE("private_damage_divisor"), 340282346638528859811704183484516925440.0, BuffType::JEDI);
+		Locker locker(multBuff);
+		multBuff->setSkillModifier("private_damage_divisor", 0);
+		player->addBuff(multBuff);
+	}
 
 	PlayerObject* ghost = player->getPlayerObject();
 
@@ -2033,6 +2041,9 @@ bool PlayerManagerImplementation::checkTradeItems(CreatureObject* player, Creatu
 			if (!playerDatapad->hasObjectInContainer(scene->getObjectID()))
 				return false;
 
+			//if (scene->isDeedControlDevice())
+				//return false;
+
 			if (scene->isPetControlDevice()) {
 				PetControlDevice* petControlDevice = cast<PetControlDevice*>(scene.get());
 
@@ -2100,6 +2111,9 @@ bool PlayerManagerImplementation::checkTradeItems(CreatureObject* player, Creatu
 
 			if (!receiverDatapad->hasObjectInContainer(scene->getObjectID()))
 				return false;
+
+			//if (scene->isDeedControlDevice())
+				//return false;
 
 			if (scene->isPetControlDevice()) {
 				PetControlDevice* petControlDevice = cast<PetControlDevice*>(scene.get());
