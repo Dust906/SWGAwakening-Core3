@@ -2777,6 +2777,37 @@ void PlayerObjectImplementation::awakeningNotifyOnline() {
 				hasClaimedReward = result->getInt(0);
 
 			if (hasClaimedReward == 0) {
+
+				// split the award string into an array if there are commas
+				if (awardedItem1.contains(",")) {
+					awardedItem1.replaceAll(" ", "");
+					Vector<String> awards;
+
+					while(awardedItem1.contains(",")) {
+						String award = awardedItem1.subString(0,awardedItem1.indexOf(","));
+						awards.add(award);
+						awardedItem1 = awardedItem1.replaceFirst(award + ",", "");
+					}
+					// get the last element if there are any after the last comma
+					if (awardedItem1 != "") awards.add(awardedItem1);
+
+					int awardOptions = awards.size() - 1;
+					int awardIndex1 = System::random(awardOptions);
+					int awardIndex2 = System::random(awardOptions);
+					if (awards.size() >= 2 && awardIndex1 == awardIndex2) {
+						// move the index +1 for 2nd
+						if (awardIndex2 == awardOptions) {
+							awardIndex2 = 0;
+						} else {
+							awardIndex2 = awardIndex2 + 1;
+						}
+					}
+
+					awardedItem1 = awards.get(awardIndex1);
+					awardedItem2 = awards.get(awardIndex2);
+
+				}
+
 				ManagedReference<SceneObject*> inventory = creature->getSlottedObject("inventory");
 
 				if (awardedItem1 != "") {
