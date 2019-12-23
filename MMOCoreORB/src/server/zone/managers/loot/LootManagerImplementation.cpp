@@ -69,6 +69,7 @@ bool LootManagerImplementation::loadConfigData() {
 		return false;
 	}
 
+	minLevelForDotWeapon = lua->getGlobalFloat("minLevelForDotWeapon");
 	yellowChance = lua->getGlobalFloat("yellowChance");
 	yellowModifier = lua->getGlobalFloat("yellowModifier");
 	exceptionalChance = lua->getGlobalFloat("exceptionalChance");
@@ -788,6 +789,9 @@ bool LootManagerImplementation::createLootSet(SceneObject* container, const Stri
 
 void LootManagerImplementation::addStaticDots(TangibleObject* object, LootItemTemplate* templateObject, int level) {
 
+	if (level < minLevelForDotWeapon)
+		return;
+
 	if (object == NULL)
 		return;
 
@@ -863,6 +867,9 @@ void LootManagerImplementation::addStaticDots(TangibleObject* object, LootItemTe
 }
 
 void LootManagerImplementation::addRandomDots(TangibleObject* object, LootItemTemplate* templateObject, int level, float excMod) {
+
+	if (level < minLevelForDotWeapon)
+			return;
 
 	if (object == NULL)
 		return;

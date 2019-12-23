@@ -29,6 +29,7 @@ class LootManager extends ManagedService implements Logger {
 	
 	private transient LootGroupMap lootGroupMap;
 	
+	private transient float minLevelForDotWeapon;
 	private transient float yellowChance;
 	private transient float yellowModifier;
 
@@ -107,6 +108,8 @@ class LootManager extends ManagedService implements Logger {
 		lootableCarbineMods.setNoDuplicateInsertPlan();
 		lootablePolearmMods.setNoDuplicateInsertPlan();
 		lootableHeavyWeaponMods.setNoDuplicateInsertPlan();
+
+		minLevelForDotWeapon = 0.0;
 		
 		exceptionalChance = 0.0;
 		exceptionalModifier = 0.0;
