@@ -14,6 +14,8 @@
 #include "server/zone/packets/object/PlayClientEffectObjectMessage.h"
 #include "server/zone/packets/scene/PlayClientEffectLocMessage.h"
 #include "server/zone/Zone.h"
+#include "server/zone/objects/scene/SceneObject.h"
+#include "server/zone/objects/building/BuildingObject.h"
 
 namespace server {
 namespace zone {
@@ -55,6 +57,16 @@ public:
 				droid->removePendingTask("droid_detonation");
 				return;
 			}
+		}
+
+		// Make sure the droid is not in a private structure
+		ManagedReference<BuildingObject*> building = droid->getParentRecursively(SceneObjectType::BUILDING).castTo<BuildingObject*>();
+		if (building != nullptr && building->isPrivateStructure()) {
+			module->stopCountDown();
+			droid->showFlyText("pet/droid_modules","detonation_disabled", 204, 0, 0);
+			module->deactivate();
+			droid->removePendingTask("droid_detonation");
+			return;
 		}
 
 		if (droid->isDead() || droid->isIncapacitated()) {
