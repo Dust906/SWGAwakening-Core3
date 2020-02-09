@@ -26,7 +26,7 @@ void VehicleObjectImplementation::fillObjectMenuResponse(ObjectMenuResponse* men
 	menuResponse->addRadialMenuItem(205, 1, "@pet/pet_menu:menu_enter_exit");
 	menuResponse->addRadialMenuItem(61, 3, "");
 
-	if (player->getPlayerObject()->isPrivileged() || (checkInRangeGarage() && !isDisabled()))
+	if (player->getPlayerObject()->isPrivileged() || (checkInRangeGarage()))
 		menuResponse->addRadialMenuItem(62, 3, "@pet/pet_menu:menu_repair_vehicle"); //Repair Vehicle
 }
 
@@ -177,12 +177,12 @@ void VehicleObjectImplementation::repairVehicle(CreatureObject* player) {
 			player->sendSystemMessage("@pet/pet_menu:undamaged_vehicle"); //The targeted vehicle does not require any repairs at the moment.
 			return;
 		}
-
+/*
 		if (isDisabled()) {
 			player->sendSystemMessage("@pet/pet_menu:cannot_repair_disabled"); //You may not repair a disabled vehicle.
 			return;
 		}
-
+*/
 		if (!checkInRangeGarage()) {
 			player->sendSystemMessage("@pet/pet_menu:repair_unrecognized_garages"); //Your vehicle does not recognize any local garages. Try again in a garage repair zone.
 			return;
@@ -220,8 +220,9 @@ void VehicleObjectImplementation::sendRepairConfirmTo(CreatureObject* player) {
 int VehicleObjectImplementation::calculateRepairCost(CreatureObject* player) {
 	if (player->getPlayerObject()->isPrivileged())
 		return 0;
-
-	return getConditionDamage() * 4;
+	int repairCost = getConditionDamage() * 4;
+	if (isDisabled()) repairCost += 100000;
+	return repairCost;
 }
 
 int VehicleObjectImplementation::inflictDamage(TangibleObject* attacker, int damageType, float damage, bool destroy, bool notifyClient, bool isCombatAction) {
