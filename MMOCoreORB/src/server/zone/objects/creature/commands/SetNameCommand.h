@@ -48,7 +48,13 @@ public:
 
 		NameManager* nameManager = server->getNameManager();
 
-		if (nameManager->validateName(newName, -1) != NameManagerResult::ACCEPTED) {
+		ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+
+		if (ghost == NULL) {
+			return GENERALERROR;
+		}
+
+		if (ghost->getAdminLevel() <= 0 && nameManager->validateName(newName, -1) != NameManagerResult::ACCEPTED) {
 			creature->sendSystemMessage("That name was rejected by the name filter.");
 			return GENERALERROR;
 		}
