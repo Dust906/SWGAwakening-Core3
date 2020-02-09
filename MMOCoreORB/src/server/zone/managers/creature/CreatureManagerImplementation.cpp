@@ -729,8 +729,10 @@ void CreatureManagerImplementation::droidHarvest(Creature* creature, CreatureObj
 		quantityExtracted = (int)(quantityExtracted * modifier);
 	}
 
+	/* Allow cave harvesting
 	if (creature->getParent().get() != NULL)
 		quantityExtracted = 1;
+	*/
 
 	int droidBonus = DroidMechanics::determineDroidSkillBonus(ownerSkill,harvestBonus,quantityExtracted);
 
@@ -895,8 +897,10 @@ void CreatureManagerImplementation::harvest(Creature* creature, CreatureObject* 
 		quantityExtracted = (int)(quantityExtracted * modifier);
 	}
 
+	/* Allow cave harvesting
 	if (creature->getParent().get() != NULL)
 		quantityExtracted = 1;
+	*/
 
 	resourceManager->harvestResourceToPlayer(player, resourceSpawn, quantityExtracted);
 
