@@ -1254,6 +1254,8 @@ void PlayerManagerImplementation::sendPlayerToCloner(CreatureObject* player, uin
 
 	}
 
+	unequipAllBrokenWearables(player);
+
 	Reference<Task*> task = new PlayerIncapacitationRecoverTask(player, true);
 	task->schedule(3 * 1000);
 
@@ -3383,6 +3385,62 @@ void PlayerManagerImplementation::addInsurableItemsRecursive(SceneObject* obj, S
 
 		if (object->isContainerObject())
 			addInsurableItemsRecursive(object, items, onlyInsurable);
+	}
+}
+
+void PlayerManagerImplementation::unequipAllBrokenWearables(CreatureObject* player) {
+	bool enableUnequipBroken = false;
+
+	if (player == NULL){
+		return;
+	}
+	SceneObject* datapad = player->getSlottedObject("datapad");
+	SceneObject* defweapon = player->getSlottedObject("default_weapon");
+	SceneObject* bank = player->getSlottedObject("bank");
+
+	for (int i = 0; i < player->getSlottedObjectsSize(); ++i) {
+		SceneObject* container = player->getSlottedObject(i);
+
+		if (container == datapad || container == NULL || container == bank || container == defweapon)
+			continue;
+
+		if (container->isTangibleObject()) {
+			ManagedReference<TangibleObject*> item = cast<TangibleObject*>( container);
+
+			if(item != NULL && item->isWearableObject()) {
+				bool canEquip = false;
+				ManagedReference<WearableObject*> wearableObject = cast<WearableObject*>(item.get());
+				SharedTangibleObjectTemplate* tanoData = dynamic_cast<SharedTangibleObjectTemplate*>(wearableObject->getObjectTemplate());
+				if (tanoData != NULL) {
+					const Vector<String>& skillsRequired = tanoData->getCertificationsRequired();
+					if (skillsRequired.size() > 0) {
+						for (int i = 0; i < skillsRequired.size(); i++) {
+							const String& skill = skillsRequired.get(i);
+							if (!skill.isEmpty() && player->hasSkill(skill)) {
+								canEquip = true;
+								break;
+							}
+						}
+					} else {
+						// there are no skill requirements
+						canEquip = true;
+					}
+				}
+				ManagedReference<SceneObject*> inventory = player->getSlottedObject("inventory");
+				int max = item->getMaxCondition();
+				int min = max - item->getConditionDamage();
+				bool isDisabled = enableUnequipBroken && (min == 0 || max == 1);
+				if (wearableObject->isEquipped() && (isDisabled || !canEquip) && !wearableObject->isWearableContainerObject()) {
+					Locker wLocker(wearableObject, inventory);
+					inventory->transferObject(wearableObject, -1, true);
+					if (isDisabled) {
+						player->sendSystemMessage("Your " + wearableObject->getDisplayedName() + " has been unequipped due to poor condition.");
+					} else if (!canEquip) {
+						player->sendSystemMessage("Your " + wearableObject->getDisplayedName() + " has been unequipped due to lack of skill requirements.");
+					}
+				}
+			}
+		}
 	}
 }
 

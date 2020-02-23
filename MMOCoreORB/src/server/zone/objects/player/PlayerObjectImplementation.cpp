@@ -2753,6 +2753,8 @@ void PlayerObjectImplementation::awakeningNotifyOnline() {
 	if (!pub9CheckComplete())
 		setPub9CheckComplete(true);
 
+	playerManager->unequipAllBrokenWearables(creature);
+
 	//SWG Awakening Custom -- Event System
 	if (ServerSettings::instance()->getEventSystemEnabled()) {
 		int awardedBadge = ServerSettings::instance()->getAwardedBadge();

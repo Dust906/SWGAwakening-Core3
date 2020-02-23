@@ -1116,6 +1116,8 @@ int CombatManager::getArmorVehicleReduction(VehicleObject* defender, int damageT
 
 int CombatManager::getArmorReduction(TangibleObject* attacker, WeaponObject* weapon, CreatureObject* defender, float damage, int hitLocation, const CreatureAttackData& data) {
 	int damageType = 0, armorPiercing = 1;
+	bool enableUnequipBroken = false;
+	bool requireUnequip = false;
 
 	if (!data.isForceAttack()) {
 		damageType = weapon->getDamageType();
@@ -1214,7 +1216,7 @@ int CombatManager::getArmorReduction(TangibleObject* attacker, WeaponObject* wea
 		Locker plocker(psg);
 
 		psg->inflictDamage(psg, 0, damage * 0.1, true, true);
-
+		requireUnequip = (psg->getMaxCondition() - psg->getConditionDamage() <= 0);
 	}
 
 	// Standard Armor
@@ -1239,6 +1241,15 @@ int CombatManager::getArmorReduction(TangibleObject* attacker, WeaponObject* wea
 		Locker alocker(armor);
 
 		armor->inflictDamage(armor, 0, damage * 0.1, true, true);
+		requireUnequip = (armor->getMaxCondition() - armor->getConditionDamage() <= 0);
+	}
+
+	if (enableUnequipBroken && requireUnequip) {
+		Zone* zone = defender->getZone();
+		if (zone != nullptr) {
+			PlayerManager* playerManager = zone->getZoneServer()->getPlayerManager();
+			playerManager->unequipAllBrokenWearables(defender);
+		}
 	}
 
 	return damage;

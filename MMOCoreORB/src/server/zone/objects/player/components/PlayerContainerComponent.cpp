@@ -65,6 +65,14 @@ int PlayerContainerComponent::canAddObject(SceneObject* sceneObject, SceneObject
 		}
 
 		if (object->isWearableObject()) {
+			bool enableUnequipBroken = false;
+			int max = wearable->getMaxCondition();
+			int min = max - wearable->getConditionDamage();
+			if (enableUnequipBroken && (min == 0 || max == 1)) {
+				errorDescription = "This item cannot be equipped due to poor condition.";
+				return TransferErrorCode::PLAYERUSEMASKERROR;
+			}
+
 			if (tanoData != NULL) {
 				const Vector<String>& skillsRequired = tanoData->getCertificationsRequired();
 
