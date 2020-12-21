@@ -81,6 +81,7 @@ public:
 	int setFrsRank(lua_State* L);
 	int getFrsRank(lua_State* L);
 	int getFrsCouncil(lua_State* L);
+	int setVisibility(lua_State* L);
 
 	int getJediUnlockVariable(lua_State* L);
 	int setIsGlowing(lua_State* L);

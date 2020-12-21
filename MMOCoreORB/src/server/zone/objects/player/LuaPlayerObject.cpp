@@ -86,7 +86,7 @@ Luna<LuaPlayerObject>::RegType LuaPlayerObject::Register[] = {
 		{ "isPreVillageJedi", &LuaPlayerObject::isPreVillageJedi},
 		{ "sendUnlockMessage", &LuaPlayerObject::sendUnlockMessage},
 		{ "checkForceStatus", &LuaPlayerObject::checkForceStatus},
-
+		{ "setVisibility", &LuaPlayerObject::setVisibility},
 		{ 0, 0 }
 };
 
@@ -670,6 +670,14 @@ int LuaPlayerObject::setFrsCouncil(lua_State* L) {
 	FrsData* frsData = realObject->getFrsData();
 
 	frsData->setCouncilType(councilType);
+
+	return 0;
+}
+
+int LuaPlayerObject::setVisibility(lua_State* L) {
+	int visValue = lua_tointeger(L, -1);
+
+	realObject->setVisibility(visValue);
 
 	return 0;
 }
